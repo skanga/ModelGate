@@ -1,0 +1,10 @@
+{
+  "scenarios": [
+    {
+      "name": "openai chat live smoke",
+      "provider": "openai",
+      "required_env": ["OPENAI_API_KEY"],
+      "base_url_env": "MODELGATE_LIVE_OPENAI_BASE_URL"
+    }
+  ]
+}

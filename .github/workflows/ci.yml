@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  verify:
+    name: Maven Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Verify
+        run: mvn -q verify
+
+  package:
+    name: Package And Smoke
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Package shaded jar
+        run: mvn -q -DskipTests package
+
+      - name: Smoke test shaded jar
+        shell: bash
+        run: |
+          java -jar target/modelgate-0.1.jar --port 18787 &
+          gateway_pid=$!
+          trap 'kill $gateway_pid' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://localhost:18787/health > /dev/null \
+              && curl --fail --silent http://localhost:18787/ready > /dev/null; then
+              exit 0
+            fi
+            sleep 0.5
+          done
+          exit 1
+
+      - name: Upload shaded jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: modelgate-jar
+          path: target/modelgate-0.1.jar
+          if-no-files-found: error
+
+  docker:
+    name: Docker Build Smoke
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t modelgate:ci .

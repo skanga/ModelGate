@@ -1,0 +1,9 @@
+{
+  "scenarios": [
+    {
+      "name": "openai chat live smoke",
+      "provider": "openai",
+      "required_env": ["OPENAI_API_KEY"]
+    }
+  ]
+}

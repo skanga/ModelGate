@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "provider": "openai",
+      "validation_tier": "live-smoke",
+      "mocked_contract": true,
+      "recorded_contract": true,
+      "live_validation": true,
+      "production_ready": true,
+      "notes": "Fixture provider with complete production readiness evidence."
+    }
+  ]
+}

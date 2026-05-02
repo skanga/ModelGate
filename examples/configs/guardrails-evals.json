@@ -1,0 +1,40 @@
+{
+  "provider": "openai",
+  "api_key": "${OPENAI_API_KEY}",
+  "metadata": {
+    "tenant": "example-tenant",
+    "eval_suite": "smoke"
+  },
+  "input_guardrails": [
+    {
+      "id": "block-secrets",
+      "default.regexMatch": {
+        "rule": "(api[_-]?key|secret|password)\\s*[:=]",
+        "not": true
+      },
+      "deny": true
+    },
+    {
+      "id": "require-tenant",
+      "default.requiredMetadataKeys": {
+        "metadataKeys": ["tenant"],
+        "operator": "all"
+      },
+      "deny": true
+    }
+  ],
+  "output_guardrails": [
+    {
+      "id": "response-json",
+      "default.jsonKeys": {
+        "required": ["answer"]
+      }
+    }
+  ],
+  "default_output_guardrails": [
+    {
+      "id": "no-empty-response",
+      "default.notNull": {}
+    }
+  ]
+}

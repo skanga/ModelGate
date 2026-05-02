@@ -1,0 +1,12 @@
+.codex/
+.idea/
+gateway/
+target/
+docs/
+examples/
+scripts/__pycache__/
+*.log
+*.tmp
+.git/
+.gitignore
+Dockerfile

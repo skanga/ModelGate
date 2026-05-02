@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "provider": "openai",
+      "validation_tier": "mocked-contract",
+      "mocked_contract": true,
+      "recorded_contract": false,
+      "live_validation": false,
+      "production_ready": false,
+      "notes": "Fixture provider intentionally out of sync with the live manifest."
+    }
+  ]
+}

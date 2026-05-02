@@ -1,0 +1,2881 @@
+{
+  "contracts": [
+    {
+      "name": "openai chat proxies request and response unchanged",
+      "provider": "openai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "sk-openai",
+      "request_body": {
+        "model": "gpt-4o-mini",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-openai"}
+      ],
+      "forbidden_provider_headers": [
+        "x-modelgate-config"
+      ],
+      "provider_body_contains": [
+        "\"model\":\"gpt-4o-mini\"",
+        "\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]"
+      ],
+      "provider_response_body": {
+        "id": "chatcmpl-openai-contract",
+        "object": "chat.completion",
+        "choices": [
+          {
+            "index": 0,
+            "message": {"role": "assistant", "content": "openai ok"},
+            "finish_reason": "stop"
+          }
+        ]
+      },
+      "response_body_contains": [
+        "\"id\":\"chatcmpl-openai-contract\"",
+        "\"content\":\"openai ok\""
+      ]
+    },
+    {
+      "name": "openai models list preserves get method",
+      "provider": "openai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "sk-openai",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-openai"}
+      ],
+      "provider_body_contains": [],
+      "provider_response_body": {
+        "object": "list",
+        "data": [
+          {"id": "gpt-4o-mini", "object": "model"}
+        ]
+      },
+      "response_body_contains": [
+        "\"object\":\"list\"",
+        "\"id\":\"gpt-4o-mini\""
+      ]
+    },
+    {
+      "name": "anthropic chat maps openai chat to messages api",
+      "provider": "anthropic",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "sk-anthropic",
+      "request_body": {
+        "model": "claude-3-5-haiku-20241022",
+        "messages": [
+          {"role": "system", "content": "Be terse."},
+          {"role": "user", "content": "Hello"}
+        ],
+        "max_tokens": 64
+      },
+      "expected_provider_path": "/messages",
+      "expected_provider_headers": [
+        {"name": "x-api-key", "value": "sk-anthropic"},
+        {"name": "anthropic-version", "value": "2023-06-01"}
+      ],
+      "provider_body_contains": [
+        "\"system\":[{\"type\":\"text\",\"text\":\"Be terse.\"}]",
+        "\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]"
+      ],
+      "provider_response_body": {
+        "id": "msg-contract",
+        "model": "claude-3-5-haiku-20241022",
+        "content": [
+          {"type": "text", "text": "anthropic ok"}
+        ],
+        "usage": {"input_tokens": 2, "output_tokens": 3}
+      },
+      "response_body_contains": [
+        "\"provider\":\"anthropic\"",
+        "\"object\":\"chat.completion\"",
+        "\"content\":\"anthropic ok\"",
+        "\"prompt_tokens\":2"
+      ]
+    },
+    {
+      "name": "cohere chat maps to v2 chat and normalizes response",
+      "provider": "cohere",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "co-key",
+      "request_body": {
+        "model": "command-r",
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ],
+        "stop": "END",
+        "response_format": {"type": "json_schema", "json_schema": {"strict": true}}
+      },
+      "expected_provider_path": "/v2/chat",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer co-key"}
+      ],
+      "provider_body_contains": [
+        "\"messages\":[{\"role\":\"system\",\"content\":\"Policy\"}]",
+        "\"stop_sequences\":[\"END\"]",
+        "\"response_format\":{\"type\":\"json_schema\"",
+        "\"strict_tools\":true"
+      ],
+      "provider_response_body": {
+        "id": "co-1",
+        "message": {"content": [{"type": "text", "text": "cohere ok"}]},
+        "finish_reason": "COMPLETE",
+        "usage": {"tokens": {"input_tokens": 2, "output_tokens": 3}}
+      },
+      "response_body_contains": [
+        "\"provider\":\"cohere\"",
+        "\"content\":\"cohere ok\"",
+        "\"prompt_tokens\":2",
+        "\"completion_tokens\":3"
+      ]
+    },
+    {
+      "name": "cohere files list maps datasets response",
+      "provider": "cohere",
+      "endpoint": "/v1/files",
+      "method": "GET",
+      "api_key": "co-key",
+      "expected_provider_method": "GET",
+      "expected_provider_path": "/v1/datasets",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer co-key"}
+      ],
+      "provider_response_body": {
+        "datasets": [
+          {
+            "id": "dataset-1",
+            "name": "input.jsonl",
+            "created_at": "2026-04-28T10:15:30Z",
+            "dataset_type": "embed-input",
+            "validation_status": "validated",
+            "validation_error": ""
+          }
+        ]
+      },
+      "response_body_contains": [
+        "\"object\":\"list\"",
+        "\"id\":\"dataset-1\"",
+        "\"filename\":\"input.jsonl\"",
+        "\"status\":\"processed\""
+      ]
+    },
+    {
+      "name": "cohere create batch maps embed job request and response",
+      "provider": "cohere",
+      "endpoint": "/v1/batches",
+      "api_key": "co-key",
+      "request_body": {
+        "model": "embed-v4.0",
+        "input_file_id": "dataset-1",
+        "input_type": "search_document",
+        "name": "nightly",
+        "embedding_types": ["float"],
+        "truncate": "END"
+      },
+      "expected_provider_path": "/v1/embed-jobs",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer co-key"}
+      ],
+      "provider_body_contains": [
+        "\"dataset_id\":\"dataset-1\"",
+        "\"input_type\":\"search_document\"",
+        "\"embedding_types\":[\"float\"]"
+      ],
+      "provider_body_not_contains": [
+        "\"input_file_id\""
+      ],
+      "provider_response_body": {
+        "job_id": "job-1",
+        "meta": {"warnings": []}
+      },
+      "response_body_contains": [
+        "\"id\":\"job-1\"",
+        "\"object\":\"batch\"",
+        "\"endpoint\":\"/v1/embed\"",
+        "\"status\":\"in_progress\""
+      ]
+    },
+    {
+      "name": "bedrock converse maps model route body and response",
+      "provider": "bedrock",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "bedrock-key",
+      "config": {
+        "aws_region": "us-east-1",
+        "aws_auth_type": "apiKey"
+      },
+      "request_body": {
+        "model": "anthropic.claude-3-sonnet-20240229-v1:0",
+        "messages": [
+          {"role": "system", "content": "Use short answers."},
+          {"role": "user", "content": "Hello"}
+        ],
+        "max_completion_tokens": 64,
+        "temperature": 0.2
+      },
+      "expected_provider_path": "/model/anthropic.claude-3-sonnet-20240229-v1%3A0/converse",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer bedrock-key"}
+      ],
+      "provider_body_contains": [
+        "\"system\":[{\"text\":\"Use short answers.\"}]",
+        "\"messages\":[{\"role\":\"user\",\"content\":[{\"text\":\"Hello\"}]}]",
+        "\"maxTokens\":64"
+      ],
+      "provider_response_body": {
+        "output": {"message": {"content": [{"text": "bedrock ok"}]}},
+        "stopReason": "end_turn",
+        "usage": {"inputTokens": 2, "outputTokens": 3, "totalTokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"bedrock\"",
+        "\"content\":\"bedrock ok\"",
+        "\"finish_reason\":\"stop\"",
+        "\"total_tokens\":5"
+      ]
+    },
+    {
+      "name": "vertex gemini chat maps to generate content and response",
+      "provider": "vertex-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "vertex-token",
+      "config": {
+        "vertex_project_id": "project-a",
+        "vertex_region": "us-central1"
+      },
+      "request_body": {
+        "model": "google.gemini-1.5-pro",
+        "messages": [
+          {"role": "system", "content": "Be factual."},
+          {"role": "user", "content": [{"type": "text", "text": "Hi"}]}
+        ],
+        "max_completion_tokens": 128
+      },
+      "expected_provider_path": "/v1/projects/project-a/locations/us-central1/publishers/google/models/gemini-1.5-pro:generateContent",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer vertex-token"}
+      ],
+      "provider_body_contains": [
+        "\"systemInstruction\":{\"role\":\"system\"",
+        "\"contents\":[{\"role\":\"user\"",
+        "\"maxOutputTokens\":128"
+      ],
+      "provider_response_body": {
+        "modelVersion": "gemini-1.5-pro",
+        "candidates": [
+          {
+            "content": {"parts": [{"text": "vertex ok"}]},
+            "finishReason": "STOP"
+          }
+        ],
+        "usageMetadata": {
+          "promptTokenCount": 2,
+          "candidatesTokenCount": 3,
+          "totalTokenCount": 5
+        }
+      },
+      "response_body_contains": [
+        "\"provider\":\"vertex-ai\"",
+        "\"model\":\"gemini-1.5-pro\"",
+        "\"content\":\"vertex ok\"",
+        "\"finish_reason\":\"stop\""
+      ]
+    },
+    {
+      "name": "workers ai image maps model route body and response",
+      "provider": "workers-ai",
+      "endpoint": "/v1/images/generations",
+      "api_key": "cf-token",
+      "config": {
+        "workers_ai_account_id": "account-123"
+      },
+      "request_body": {
+        "model": "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+        "prompt": "mountain",
+        "negative_prompt": "blur",
+        "steps": 8,
+        "size": "1024x768",
+        "seed": 42
+      },
+      "expected_provider_path": "/@cf/stabilityai/stable-diffusion-xl-base-1.0",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer cf-token"}
+      ],
+      "provider_body_contains": [
+        "\"prompt\":\"mountain\"",
+        "\"negative_prompt\":\"blur\"",
+        "\"num_steps\":8",
+        "\"width\":1024",
+        "\"height\":768"
+      ],
+      "provider_response_body": {
+        "result": {"image": "aW1n"},
+        "success": true
+      },
+      "response_body_contains": [
+        "\"provider\":\"workers-ai\"",
+        "\"b64_json\":\"aW1n\""
+      ]
+    },
+    {
+      "name": "perplexity normalizes openai edge request and response",
+      "provider": "perplexity-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "pplx-key",
+      "request_body": {
+        "model": "sonar",
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ],
+        "frequency_penalty": 1.1,
+        "max_completion_tokens": 50
+      },
+      "expected_provider_path": "/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer pplx-key"}
+      ],
+      "provider_body_contains": [
+        "\"role\":\"system\"",
+        "\"repetition_penalty\":1.1",
+        "\"max_tokens\":50"
+      ],
+      "provider_response_body": {
+        "id": "pplx-1",
+        "object": "chat.completion",
+        "model": "sonar",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "perplexity ok"}, "finish_reason": "stop"}
+        ],
+        "usage": {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"perplexity-ai\"",
+        "\"content\":\"perplexity ok\"",
+        "\"total_tokens\":5"
+      ]
+    },
+    {
+      "name": "sagemaker invocation maps path headers and passthrough response",
+      "provider": "sagemaker",
+      "endpoint": "/v1/endpoints/my-endpoint/invocations",
+      "api_key": "sage-key",
+      "config": {
+        "aws_region": "eu-west-1",
+        "amzn_sagemaker_target_model": "model-a"
+      },
+      "request_body": {
+        "inputs": "hello"
+      },
+      "expected_provider_path": "/endpoints/my-endpoint/invocations",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sage-key"},
+        {"name": "x-amzn-sagemaker-target-model", "value": "model-a"}
+      ],
+      "provider_body_contains": [
+        "\"inputs\":\"hello\""
+      ],
+      "provider_response_body": {
+        "result": "sagemaker ok"
+      },
+      "response_body_contains": [
+        "\"result\":\"sagemaker ok\""
+      ]
+    },
+    {
+      "name": "sagemaker invocation signs static aws credentials",
+      "provider": "sagemaker",
+      "endpoint": "/v1/endpoints/my-endpoint/invocations",
+      "api_key": "ignored-sage-key",
+      "config": {
+        "aws_region": "eu-west-1",
+        "aws_access_key_id": "AKIA_CONTRACT",
+        "aws_secret_access_key": "contract-secret",
+        "aws_session_token": "contract-session",
+        "amzn_sagemaker_target_model": "model-a"
+      },
+      "request_body": {
+        "inputs": "hello"
+      },
+      "expected_provider_path": "/endpoints/my-endpoint/invocations",
+      "expected_provider_headers": [
+        {"name": "x-amzn-sagemaker-target-model", "value": "model-a"},
+        {"name": "x-amz-security-token", "value": "contract-session"}
+      ],
+      "expected_provider_header_prefixes": [
+        {"name": "authorization", "value": "AWS4-HMAC-SHA256 Credential=AKIA_CONTRACT/"}
+      ],
+      "expected_provider_header_contains": [
+        {"name": "authorization", "value": "/eu-west-1/sagemaker/aws4_request"},
+        {"name": "authorization", "value": "SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date;x-amz-security-token"},
+        {"name": "authorization", "value": "Signature="}
+      ],
+      "expected_provider_header_not_contains": [
+        {"name": "authorization", "value": "x-amzn-sagemaker-target-model"}
+      ],
+      "provider_body_contains": [
+        "\"inputs\":\"hello\""
+      ],
+      "provider_response_body": {
+        "result": "sagemaker signed"
+      },
+      "response_body_contains": [
+        "\"result\":\"sagemaker signed\""
+      ]
+    },
+    {
+      "name": "stability v1 image maps body and response",
+      "provider": "stability-ai",
+      "endpoint": "/v1/images/generations",
+      "api_key": "stability-key",
+      "request_body": {
+        "model": "stable-diffusion-xl-v1",
+        "prompt": "mountain",
+        "n": 2,
+        "size": "768x512",
+        "style": "photographic"
+      },
+      "expected_provider_path": "/v1/generation/stable-diffusion-xl-v1/text-to-image",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer stability-key"}
+      ],
+      "provider_body_contains": [
+        "\"text_prompts\":[{\"text\":\"mountain\",\"weight\":1}]",
+        "\"samples\":2",
+        "\"width\":768",
+        "\"height\":512",
+        "\"style_preset\":\"photographic\""
+      ],
+      "provider_response_body": {
+        "image": "aW1n",
+        "finish_reason": "SUCCESS",
+        "seed": 7
+      },
+      "response_body_contains": [
+        "\"provider\":\"stability-ai\"",
+        "\"b64_json\":\"aW1n\""
+      ]
+    },
+    {
+      "name": "stability v2 multipart image maps model field and preserves boundary",
+      "provider": "stability-ai",
+      "endpoint": "/v1/images/generations",
+      "api_key": "stability-key",
+      "content_type": "multipart/form-data; boundary=mg",
+      "request_body_text": "--mg\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\ncore\r\n--mg\r\nContent-Disposition: form-data; name=\"prompt\"\r\n\r\nmountain\r\n--mg--\r\n",
+      "expected_provider_path": "/v2beta/stable-image/generate/core",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer stability-key"},
+        {"name": "accept", "value": "application/json"}
+      ],
+      "expected_provider_content_type": "multipart/form-data; boundary=mg",
+      "provider_body_contains": [
+        "name=\"model\"",
+        "core",
+        "name=\"prompt\"",
+        "mountain"
+      ],
+      "provider_response_body": {
+        "image": "aW1nLXYy",
+        "finish_reason": "SUCCESS"
+      },
+      "response_body_contains": [
+        "\"provider\":\"stability-ai\"",
+        "\"b64_json\":\"aW1nLXYy\""
+      ]
+    },
+    {
+      "name": "stability v2 target multipart image maps model field and preserves boundary",
+      "provider": "stability-ai",
+      "endpoint": "/v1/images/generations",
+      "api_key": "stability-key",
+      "content_type": "multipart/form-data; boundary=mg",
+      "config": {
+        "strategy": {"mode": "fallback"},
+        "targets": [
+          {"name": "primary", "provider": "stability-ai", "api_key": "stability-key"}
+        ]
+      },
+      "request_body_text": "--mg\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\ncore\r\n--mg\r\nContent-Disposition: form-data; name=\"prompt\"\r\n\r\nmountain\r\n--mg--\r\n",
+      "expected_provider_path": "/v2beta/stable-image/generate/core",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer stability-key"},
+        {"name": "accept", "value": "application/json"}
+      ],
+      "expected_provider_content_type": "multipart/form-data; boundary=mg",
+      "provider_body_contains": [
+        "name=\"model\"",
+        "core",
+        "name=\"prompt\"",
+        "mountain"
+      ],
+      "provider_response_body": {
+        "image": "aW1nLXYyLXRhcmdldA==",
+        "finish_reason": "SUCCESS"
+      },
+      "response_body_contains": [
+        "\"provider\":\"stability-ai\"",
+        "\"b64_json\":\"aW1nLXYyLXRhcmdldA==\""
+      ]
+    },
+    {
+      "name": "voyage embeddings maps input array and token usage",
+      "provider": "voyage",
+      "endpoint": "/v1/embeddings",
+      "api_key": "voyage-key",
+      "custom_host_path": "/v1",
+      "request_body": {
+        "model": "voyage-3",
+        "input": "alpha"
+      },
+      "expected_provider_path": "/v1/embeddings",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer voyage-key"}
+      ],
+      "provider_body_contains": [
+        "\"input\":[\"alpha\"]"
+      ],
+      "provider_response_body": {
+        "object": "list",
+        "data": [
+          {"object": "embedding", "embedding": [0.1], "index": 0}
+        ],
+        "model": "voyage-3",
+        "usage": {"total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"voyage\"",
+        "\"prompt_tokens\":5"
+      ]
+    },
+    {
+      "name": "google native gemini chat maps request and response",
+      "provider": "google",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "google-key",
+      "request_body": {
+        "model": "gemini-1.5-pro",
+        "messages": [
+          {"role": "developer", "content": "Policy"},
+          {"role": "user", "content": "Hello"}
+        ],
+        "temperature": 0.2,
+        "max_completion_tokens": 64,
+        "response_format": {"type": "json_object"}
+      },
+      "expected_provider_path": "/v1beta/models/gemini-1.5-pro:generateContent?key=google-key",
+      "expected_provider_headers": [],
+      "forbidden_provider_headers": [
+        "authorization"
+      ],
+      "provider_body_contains": [
+        "\"systemInstruction\":{\"role\":\"system\"",
+        "\"contents\":[{\"role\":\"user\"",
+        "\"temperature\":0.2",
+        "\"maxOutputTokens\":64",
+        "\"responseMimeType\":\"application/json\""
+      ],
+      "provider_body_not_contains": [
+        "\"max_completion_tokens\""
+      ],
+      "provider_response_body": {
+        "modelVersion": "gemini-1.5-pro",
+        "candidates": [
+          {
+            "content": {
+              "parts": [
+                {"text": "thinking", "thought": true},
+                {"text": "google ok"}
+              ]
+            },
+            "finishReason": "STOP"
+          }
+        ],
+        "usageMetadata": {
+          "promptTokenCount": 2,
+          "candidatesTokenCount": 3,
+          "totalTokenCount": 5,
+          "thoughtsTokenCount": 1
+        }
+      },
+      "response_body_contains": [
+        "\"provider\":\"google\"",
+        "\"model\":\"gemini-1.5-pro\"",
+        "\"content\":\"google ok\"",
+        "\"finish_reason\":\"stop\"",
+        "\"reasoning_tokens\":1"
+      ]
+    },
+    {
+      "name": "fireworks chat uses inference v1 base and annotates openai response",
+      "provider": "fireworks-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "sk-fireworks",
+      "custom_host_path": "/inference/v1",
+      "request_body": {
+        "model": "accounts/fireworks/models/llama-v3p1-405b-instruct",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/inference/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-fireworks"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"accounts/fireworks/models/llama-v3p1-405b-instruct\""
+      ],
+      "provider_response_body": {
+        "id": "fw-1",
+        "object": "chat.completion",
+        "created": 1710000000,
+        "model": "accounts/fireworks/models/llama-v3p1-405b-instruct",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "fireworks ok",
+              "tool_calls": [{"id": "call_1", "type": "function"}]
+            },
+            "finish_reason": "stop",
+            "logprobs": {"content": []}
+          }
+        ],
+        "usage": {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"fireworks-ai\"",
+        "\"content\":\"fireworks ok\"",
+        "\"tool_calls\":[{\"id\":\"call_1\",\"type\":\"function\"}]",
+        "\"total_tokens\":5"
+      ]
+    },
+    {
+      "name": "fireworks image generation maps model route and array response",
+      "provider": "fireworks-ai",
+      "endpoint": "/v1/images/generations",
+      "api_key": "sk-fireworks",
+      "custom_host_path": "/inference/v1",
+      "request_body": {
+        "model": "accounts/fireworks/models/stable-diffusion-xl-1024-v1-0",
+        "prompt": "mountain"
+      },
+      "expected_provider_path": "/inference/v1/image_generation/accounts/fireworks/models/stable-diffusion-xl-1024-v1-0",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-fireworks"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"accounts/fireworks/models/stable-diffusion-xl-1024-v1-0\"",
+        "\"prompt\":\"mountain\""
+      ],
+      "provider_response_body": [
+        {"base64": "aW1n", "finishReason": "SUCCESS", "seed": 7}
+      ],
+      "response_body_contains": [
+        "\"provider\":\"fireworks-ai\"",
+        "\"b64_json\":\"aW1n\"",
+        "\"seed\":7"
+      ]
+    },
+    {
+      "name": "mistral chat strips aliases and normalizes options",
+      "provider": "mistral-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "mistral-key",
+      "custom_host_path": "/v1",
+      "request_body": {
+        "model": "mistralai.mistral-large-latest",
+        "messages": [
+          {"role": "developer", "content": "Policy"},
+          {"role": "user", "content": "Hello"}
+        ],
+        "tool_choice": "required",
+        "seed": 7,
+        "safe_mode": true,
+        "max_completion_tokens": 64
+      },
+      "expected_provider_path": "/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer mistral-key"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"mistral-large-latest\"",
+        "\"role\":\"system\"",
+        "\"tool_choice\":\"any\"",
+        "\"random_seed\":7",
+        "\"safe_prompt\":true",
+        "\"max_tokens\":64"
+      ],
+      "provider_body_not_contains": [
+        "\"mistralai.mistral-large-latest\"",
+        "\"max_completion_tokens\"",
+        "\"safe_mode\""
+      ],
+      "provider_response_body": {
+        "id": "mistral-1",
+        "object": "chat.completion",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "mistral ok"}, "finish_reason": "stop"}
+        ],
+        "usage": {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"mistral-ai\"",
+        "\"content\":\"mistral ok\"",
+        "\"total_tokens\":5"
+      ]
+    },
+    {
+      "name": "huggingface chat maps model route and developer role",
+      "provider": "huggingface",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "hf-key",
+      "request_body": {
+        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "messages": [
+          {"role": "developer", "content": "Policy"},
+          {"role": "user", "content": "Hello"}
+        ],
+        "max_completion_tokens": 25
+      },
+      "expected_provider_path": "/models/mistralai/Mixtral-8x7B-Instruct-v0.1/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer hf-key"}
+      ],
+      "provider_body_contains": [
+        "\"role\":\"system\"",
+        "\"max_tokens\":25"
+      ],
+      "provider_body_not_contains": [
+        "\"max_completion_tokens\""
+      ],
+      "provider_response_body": {
+        "id": "hf-1",
+        "object": "chat.completion",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "huggingface ok"}, "finish_reason": "stop"}
+        ]
+      },
+      "response_body_contains": [
+        "\"provider\":\"huggingface\"",
+        "\"content\":\"huggingface ok\""
+      ]
+    },
+    {
+      "name": "deepseek chat normalizes developer role and max tokens",
+      "provider": "deepseek",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "deep-key",
+      "request_body": {
+        "model": "deepseek-chat",
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ],
+        "max_completion_tokens": 50
+      },
+      "expected_provider_path": "/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer deep-key"}
+      ],
+      "provider_body_contains": [
+        "\"role\":\"system\"",
+        "\"max_tokens\":50"
+      ],
+      "provider_body_not_contains": [
+        "\"max_completion_tokens\""
+      ],
+      "provider_response_body": {
+        "id": "deep-1",
+        "object": "chat.completion",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "deepseek ok"}, "finish_reason": "stop"}
+        ]
+      },
+      "response_body_contains": [
+        "\"provider\":\"deepseek\"",
+        "\"content\":\"deepseek ok\""
+      ]
+    },
+    {
+      "name": "openrouter maps reasoning and include usage options",
+      "provider": "openrouter",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "or-key",
+      "custom_host_path": "/api",
+      "request_body": {
+        "model": "openrouter/auto",
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ],
+        "reasoning": {"max_tokens": 128},
+        "reasoning_effort": "high",
+        "stream_options": {"include_usage": true}
+      },
+      "expected_provider_path": "/api/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer or-key"},
+        {"name": "http-referer", "value": "https://portkey.ai/"},
+        {"name": "x-title", "value": "ModelGate"}
+      ],
+      "provider_body_contains": [
+        "\"role\":\"system\"",
+        "\"reasoning\":{\"max_tokens\":128,\"effort\":\"high\"}",
+        "\"usage\":{\"include\":true}"
+      ],
+      "provider_body_not_contains": [
+        "\"reasoning_effort\"",
+        "\"stream_options\""
+      ],
+      "provider_response_body": {
+        "id": "or-1",
+        "object": "chat.completion",
+        "created": 1710000000,
+        "model": "openrouter/auto",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "answer",
+              "reasoning": "thinking",
+              "reasoning_details": [{"type": "text", "text": "thinking"}]
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"openrouter\"",
+        "\"content_blocks\":[{\"type\":\"thinking\",\"thinking\":\"thinking\"",
+        "\"type\":\"text\",\"text\":\"answer\"",
+        "\"reasoning_details\":[{\"type\":\"text\",\"text\":\"thinking\"}]"
+      ]
+    },
+    {
+      "name": "jina embeddings maps input array and token usage",
+      "provider": "jina",
+      "endpoint": "/v1/embeddings",
+      "api_key": "jina-key",
+      "custom_host_path": "/v1",
+      "request_body": {
+        "model": "jina-embeddings-v3",
+        "input": "alpha"
+      },
+      "expected_provider_path": "/v1/embeddings",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer jina-key"}
+      ],
+      "provider_body_contains": [
+        "\"input\":[\"alpha\"]"
+      ],
+      "provider_response_body": {
+        "object": "list",
+        "data": [
+          {"object": "embedding", "embedding": [0.2], "index": 0}
+        ],
+        "model": "jina-embeddings-v3",
+        "usage": {"prompt_tokens": 6, "total_tokens": 6}
+      },
+      "response_body_contains": [
+        "\"provider\":\"jina\"",
+        "\"prompt_tokens\":6"
+      ]
+    },
+    {
+      "name": "azure openai api key mode uses provider api key header",
+      "provider": "azure-openai",
+      "endpoint": "/v1/proxy/deployments/gpt/chat/completions?api-version=2024-02-01",
+      "api_key": "sk-azure",
+      "config": {
+        "openai_beta": "assistants=v2"
+      },
+      "request_body": {
+        "model": "gpt-4o-mini",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/deployments/gpt/chat/completions?api-version=2024-02-01",
+      "expected_provider_headers": [
+        {"name": "api-key", "value": "sk-azure"},
+        {"name": "openai-beta", "value": "assistants=v2"}
+      ],
+      "forbidden_provider_headers": [
+        "authorization"
+      ],
+      "provider_body_contains": [
+        "\"model\":\"gpt-4o-mini\""
+      ],
+      "provider_response_body": {
+        "id": "az-1",
+        "object": "chat.completion",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "azure ok"}, "finish_reason": "stop"}
+        ]
+      },
+      "response_body_contains": [
+        "\"id\":\"az-1\"",
+        "\"content\":\"azure ok\""
+      ]
+    },
+    {
+      "name": "azure openai direct chat maps deployment path and api version",
+      "provider": "azure-openai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "sk-azure",
+      "custom_host_path": "/openai",
+      "config": {
+        "deployment_id": "gpt-4o",
+        "api_version": "2024-02-01"
+      },
+      "request_body": {
+        "model": "gpt-4o-mini",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-01",
+      "expected_provider_headers": [
+        {"name": "api-key", "value": "sk-azure"}
+      ],
+      "forbidden_provider_headers": [
+        "authorization"
+      ],
+      "provider_body_contains": [
+        "\"model\":\"gpt-4o-mini\""
+      ],
+      "provider_response_body": {
+        "id": "az-direct-1",
+        "object": "chat.completion",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "azure direct ok"}, "finish_reason": "stop"}
+        ]
+      },
+      "response_body_contains": [
+        "\"id\":\"az-direct-1\"",
+        "\"content\":\"azure direct ok\""
+      ]
+    },
+    {
+      "name": "azure ai inference adds deployment and extra parameter headers",
+      "provider": "azure-ai",
+      "endpoint": "/v1/proxy/chat/completions",
+      "api_key": "sk-azure-ai",
+      "config": {
+        "azure_deployment_name": "deployment-a"
+      },
+      "request_body": {
+        "model": "gpt-4o-mini",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-azure-ai"},
+        {"name": "extra-parameters", "value": "drop"},
+        {"name": "azureml-model-deployment", "value": "deployment-a"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"gpt-4o-mini\""
+      ],
+      "provider_response_body": {
+        "id": "az-ai-1",
+        "object": "chat.completion",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "azure ai ok"}, "finish_reason": "stop"}
+        ]
+      },
+      "response_body_contains": [
+        "\"id\":\"az-ai-1\"",
+        "\"content\":\"azure ai ok\""
+      ]
+    },
+    {
+      "name": "azure ai anthropic foundry uses x api key mode",
+      "provider": "azure-ai",
+      "endpoint": "/v1/proxy/v1/messages",
+      "api_key": "sk-azure-ai",
+      "custom_host_path": "/anthropic",
+      "config": {
+        "azure_foundry_url": "https://foundry.example/anthropic",
+        "anthropic_version": "2023-06-01"
+      },
+      "request_body": {
+        "model": "claude-3-5-sonnet",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/anthropic/v1/messages",
+      "expected_provider_headers": [
+        {"name": "x-api-key", "value": "sk-azure-ai"},
+        {"name": "anthropic-version", "value": "2023-06-01"},
+        {"name": "extra-parameters", "value": "drop"}
+      ],
+      "forbidden_provider_headers": [
+        "authorization"
+      ],
+      "provider_body_contains": [
+        "\"model\":\"claude-3-5-sonnet\"",
+        "\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]"
+      ],
+      "provider_response_body": {
+        "id": "msg-az-ai",
+        "content": [
+          {"type": "text", "text": "azure anthropic ok"}
+        ]
+      },
+      "response_body_contains": [
+        "\"id\":\"msg-az-ai\"",
+        "\"content\":[{\"type\":\"text\",\"text\":\"azure anthropic ok\"}]"
+      ]
+    },
+    {
+      "name": "openrouter streaming chat normalizes reasoning chunks through gateway",
+      "provider": "openrouter",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "or-key",
+      "custom_host_path": "/api",
+      "request_body": {
+        "model": "openrouter/auto",
+        "stream": true,
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/api/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer or-key"},
+        {"name": "http-referer", "value": "https://portkey.ai/"},
+        {"name": "x-title", "value": "ModelGate"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"stream\":true"
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "data: {\"id\":\"or-stream-1\",\"object\":\"chat.completion.chunk\",\"created\":1710000000,\"model\":\"openrouter/auto\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning\":\"thinking\",\"content\":\"answer\"},\"finish_reason\":null}]}\n\ndata: [DONE]\n\n",
+      "response_body_contains": [
+        "\"provider\":\"openrouter\"",
+        "\"content_blocks\":[{\"index\":0,\"delta\":{\"thinking\":\"thinking\"}}",
+        "{\"index\":0,\"delta\":{\"text\":\"answer\"}}",
+        "data: [DONE]"
+      ]
+    },
+    {
+      "name": "workers ai streaming chat maps response chunks through gateway",
+      "provider": "workers-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "cf-token",
+      "config": {
+        "workers_ai_account_id": "account-123"
+      },
+      "request_body": {
+        "model": "@cf/meta/llama-3.1-8b-instruct",
+        "stream": true,
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/@cf/meta/llama-3.1-8b-instruct",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer cf-token"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"stream\":true",
+        "\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]"
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "data: {\"response\":\"workers stream\"}\n\ndata: [DONE]\n\n",
+      "response_body_contains": [
+        "\"provider\":\"workers-ai\"",
+        "\"content\":\"workers stream\"",
+        "data: [DONE]"
+      ],
+      "response_body_not_contains": [
+        "\"response\":\"workers stream\""
+      ]
+    },
+    {
+      "name": "cohere streaming chat maps event stream through gateway",
+      "provider": "cohere",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "co-key",
+      "request_body": {
+        "model": "command-r",
+        "stream": true,
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ]
+      },
+      "expected_provider_path": "/v2/chat",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer co-key"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"stream\":true",
+        "\"role\":\"system\""
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "event: message-start\ndata: {\"type\":\"message-start\",\"id\":\"co-stream-1\"}\n\nevent: content-delta\ndata: {\"type\":\"content-delta\",\"index\":0,\"delta\":{\"message\":{\"content\":{\"text\":\"cohere stream\"}}}}\n\nevent: message-end\ndata: {\"type\":\"message-end\",\"delta\":{\"finish_reason\":\"COMPLETE\",\"usage\":{\"tokens\":{\"input_tokens\":2,\"output_tokens\":3}}}}\n\n",
+      "response_body_contains": [
+        "\"id\":\"co-stream-1\"",
+        "\"provider\":\"cohere\"",
+        "\"content\":\"cohere stream\"",
+        "\"prompt_tokens\":2",
+        "\"completion_tokens\":3",
+        "data: [DONE]"
+      ]
+    },
+    {
+      "name": "google streaming gemini chat maps sse chunks through gateway",
+      "provider": "google",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "google-key",
+      "request_body": {
+        "model": "gemini-1.5-pro",
+        "stream": true,
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/v1beta/models/gemini-1.5-pro:streamGenerateContent?key=google-key",
+      "expected_provider_headers": [],
+      "forbidden_provider_headers": [
+        "authorization"
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"contents\":[{\"role\":\"user\""
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "data: {\"modelVersion\":\"gemini-1.5-pro\",\"candidates\":[{\"index\":0,\"content\":{\"parts\":[{\"text\":\"thinking\",\"thought\":true},{\"text\":\"gemini stream\"}]},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":2,\"candidatesTokenCount\":3,\"totalTokenCount\":5,\"thoughtsTokenCount\":1}}\n\ndata: [DONE]\n\n",
+      "response_body_contains": [
+        "\"provider\":\"google\"",
+        "\"content\":\"gemini stream\"",
+        "\"thinking\":\"thinking\"",
+        "\"finish_reason\":\"stop\"",
+        "\"reasoning_tokens\":1",
+        "data: [DONE]"
+      ]
+    },
+    {
+      "name": "bedrock converse streaming maps newline chunks through gateway",
+      "provider": "bedrock",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "bedrock-key",
+      "config": {
+        "aws_region": "us-east-1",
+        "aws_auth_type": "apiKey"
+      },
+      "request_body": {
+        "model": "anthropic.claude-3-sonnet-20240229-v1:0",
+        "stream": true,
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/model/anthropic.claude-3-sonnet-20240229-v1%3A0/converse-stream",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer bedrock-key"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"messages\":[{\"role\":\"user\",\"content\":[{\"text\":\"Hello\"}]}]"
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "{\"delta\":{\"text\":\"bedrock stream\"},\"contentBlockIndex\":0}\n{\"stopReason\":\"end_turn\"}\n{\"usage\":{\"inputTokens\":2,\"outputTokens\":3,\"totalTokens\":5,\"cacheReadInputTokens\":1}}\n",
+      "response_body_contains": [
+        "\"provider\":\"bedrock\"",
+        "\"content\":\"bedrock stream\"",
+        "\"finish_reason\":\"stop\"",
+        "\"cached_tokens\":1",
+        "data: [DONE]"
+      ]
+    },
+    {
+      "name": "bedrock converse streaming maps aws eventstream frames through gateway",
+      "provider": "bedrock",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "bedrock-key",
+      "config": {
+        "aws_region": "us-east-1",
+        "aws_auth_type": "apiKey"
+      },
+      "request_body": {
+        "model": "anthropic.claude-3-sonnet-20240229-v1:0",
+        "stream": true,
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/model/anthropic.claude-3-sonnet-20240229-v1%3A0/converse-stream",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer bedrock-key"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"messages\":[{\"role\":\"user\",\"content\":[{\"text\":\"Hello\"}]}]"
+      ],
+      "provider_response_content_type": "application/vnd.amazon.eventstream",
+      "provider_response_base64": "AAAAugAAAFcAAAAADTptZXNzYWdlLXR5cGUHAAVldmVudAs6ZXZlbnQtdHlwZQcAEWNvbnRlbnRCbG9ja0RlbHRhDTpjb250ZW50LXR5cGUHABBhcHBsaWNhdGlvbi9qc29ueyJjb250ZW50QmxvY2tEZWx0YSI6eyJjb250ZW50QmxvY2tJbmRleCI6MCwiZGVsdGEiOnsidGV4dCI6ImJlZHJvY2sgYXdzIHN0cmVhbSJ9fX0AAAAAAAAAigAAAFEAAAAADTptZXNzYWdlLXR5cGUHAAVldmVudAs6ZXZlbnQtdHlwZQcAC21lc3NhZ2VTdG9wDTpjb250ZW50LXR5cGUHABBhcHBsaWNhdGlvbi9qc29ueyJtZXNzYWdlU3RvcCI6eyJzdG9wUmVhc29uIjoiZW5kX3R1cm4ifX0AAAAAAAAAwAAAAE4AAAAADTptZXNzYWdlLXR5cGUHAAVldmVudAs6ZXZlbnQtdHlwZQcACG1ldGFkYXRhDTpjb250ZW50LXR5cGUHABBhcHBsaWNhdGlvbi9qc29ueyJtZXRhZGF0YSI6eyJ1c2FnZSI6eyJpbnB1dFRva2VucyI6Miwib3V0cHV0VG9rZW5zIjozLCJ0b3RhbFRva2VucyI6NSwiY2FjaGVSZWFkSW5wdXRUb2tlbnMiOjF9fX0AAAAA",
+      "response_body_contains": [
+        "\"provider\":\"bedrock\"",
+        "\"content\":\"bedrock aws stream\"",
+        "\"finish_reason\":\"stop\"",
+        "\"cached_tokens\":1",
+        "data: [DONE]"
+      ]
+    },
+    {
+      "name": "huggingface streaming chat drops ping and annotates chunks through gateway",
+      "provider": "huggingface",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "hf-key",
+      "request_body": {
+        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "stream": true,
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ]
+      },
+      "expected_provider_path": "/models/mistralai/Mixtral-8x7B-Instruct-v0.1/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer hf-key"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"role\":\"system\"",
+        "\"stream\":true"
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "event: ping\n\ndata: {\"object\":\"chat.completion.chunk\",\"created\":1710000000,\"model\":\"hf-model\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"hf stream\"},\"finish_reason\":null}]}\n\ndata: [DONE]\n\n",
+      "response_body_contains": [
+        "\"provider\":\"huggingface\"",
+        "\"content\":\"hf stream\"",
+        "data: [DONE]"
+      ],
+      "response_body_not_contains": [
+        "event: ping"
+      ]
+    },
+    {
+      "name": "perplexity streaming chat appends done through gateway",
+      "provider": "perplexity-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "pplx-key",
+      "request_body": {
+        "model": "sonar",
+        "stream": true,
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ],
+        "frequency_penalty": 1.1
+      },
+      "expected_provider_path": "/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer pplx-key"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"role\":\"system\"",
+        "\"repetition_penalty\":1.1",
+        "\"stream\":true"
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "data: {\"id\":\"pplx-stream-1\",\"object\":\"chat.completion.chunk\",\"created\":1710000000,\"model\":\"sonar\",\"citations\":[\"https://example.test\"],\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"pplx stream\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":3,\"total_tokens\":5}}\n\n",
+      "response_body_contains": [
+        "\"provider\":\"perplexity-ai\"",
+        "\"content\":\"pplx stream\"",
+        "\"citations\":[\"https://example.test\"]",
+        "data: [DONE]"
+      ]
+    },
+    {
+      "name": "deepseek streaming chat annotates openai-compatible chunks through gateway",
+      "provider": "deepseek",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "deep-key",
+      "request_body": {
+        "model": "deepseek-chat",
+        "stream": true,
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ]
+      },
+      "expected_provider_path": "/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer deep-key"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"role\":\"system\"",
+        "\"stream\":true"
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "data: {\"id\":\"deep-stream-1\",\"object\":\"chat.completion.chunk\",\"created\":1710000000,\"model\":\"deepseek-chat\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"deep stream\"},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}\n\ndata: [DONE]\n\n",
+      "response_body_contains": [
+        "\"provider\":\"deepseek\"",
+        "\"content\":\"deep stream\"",
+        "\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}",
+        "data: [DONE]"
+      ]
+    },
+    {
+      "name": "mistral streaming chat strips aliases and annotates chunks through gateway",
+      "provider": "mistral-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "mistral-key",
+      "custom_host_path": "/v1",
+      "request_body": {
+        "model": "mistralai.mistral-large-latest",
+        "stream": true,
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ],
+        "tool_choice": "required"
+      },
+      "expected_provider_path": "/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer mistral-key"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"mistral-large-latest\"",
+        "\"role\":\"system\"",
+        "\"tool_choice\":\"any\"",
+        "\"stream\":true"
+      ],
+      "provider_body_not_contains": [
+        "\"mistralai.mistral-large-latest\""
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "data: {\"id\":\"mistral-stream-1\",\"object\":\"chat.completion.chunk\",\"created\":1710000000,\"model\":\"mistral-large-latest\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"mistral stream\"},\"finish_reason\":null}]}\n\ndata: [DONE]\n\n",
+      "response_body_contains": [
+        "\"provider\":\"mistral-ai\"",
+        "\"content\":\"mistral stream\"",
+        "data: [DONE]"
+      ]
+    },
+    {
+      "name": "fireworks streaming chat preserves inference base and annotates chunks through gateway",
+      "provider": "fireworks-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "sk-fireworks",
+      "custom_host_path": "/inference/v1",
+      "request_body": {
+        "model": "accounts/fireworks/models/llama-v3p1-405b-instruct",
+        "stream": true,
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/inference/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-fireworks"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "text/event-stream"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"accounts/fireworks/models/llama-v3p1-405b-instruct\"",
+        "\"stream\":true"
+      ],
+      "provider_response_content_type": "text/event-stream",
+      "provider_response_text": "data: {\"id\":\"fw-stream-1\",\"object\":\"chat.completion.chunk\",\"created\":1710000000,\"model\":\"accounts/fireworks/models/llama-v3p1-405b-instruct\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"fireworks stream\"},\"finish_reason\":null}]}\n\ndata: [DONE]\n\n",
+      "response_body_contains": [
+        "\"provider\":\"fireworks-ai\"",
+        "\"content\":\"fireworks stream\"",
+        "data: [DONE]"
+      ]
+    },
+    {
+      "name": "openai audio transcription forwards raw audio bytes and content type",
+      "provider": "openai",
+      "endpoint": "/v1/audio/transcriptions",
+      "api_key": "sk-audio",
+      "content_type": "audio/wav",
+      "request_body_base64": "UklGRgD//n8=",
+      "expected_provider_path": "/v1/audio/transcriptions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-audio"}
+      ],
+      "provider_body_contains": [
+        "RIFF"
+      ],
+      "expected_provider_content_type": "audio/wav",
+      "expected_provider_body_base64": "UklGRgD//n8=",
+      "provider_response_body": {
+        "text": "audio ok"
+      },
+      "response_body_contains": [
+        "\"text\":\"audio ok\""
+      ]
+    },
+    {
+      "name": "openai image edit forwards multipart body and boundary",
+      "provider": "openai",
+      "endpoint": "/v1/images/edits",
+      "api_key": "sk-image",
+      "content_type": "multipart/form-data; boundary=modelgate-boundary",
+      "request_body_text": "--modelgate-boundary\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\ngpt-image-1\r\n--modelgate-boundary\r\nContent-Disposition: form-data; name=\"image\"; filename=\"image.png\"\r\nContent-Type: image/png\r\n\r\nPNGDATA\r\n--modelgate-boundary--\r\n",
+      "expected_provider_path": "/v1/images/edits",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-image"}
+      ],
+      "provider_body_contains": [
+        "name=\"model\"",
+        "gpt-image-1",
+        "name=\"image\"; filename=\"image.png\"",
+        "PNGDATA"
+      ],
+      "expected_provider_content_type": "multipart/form-data; boundary=modelgate-boundary",
+      "provider_response_body": {
+        "created": 1710000000,
+        "data": [
+          {"b64_json": "aW1nLWVkaXQ="}
+        ]
+      },
+      "response_body_contains": [
+        "\"b64_json\":\"aW1nLWVkaXQ=\""
+      ]
+    },
+    {
+      "name": "openai file content preserves binary response bytes and headers",
+      "provider": "openai",
+      "endpoint": "/v1/files/file-abc/content",
+      "method": "GET",
+      "api_key": "sk-file",
+      "request_body": {},
+      "expected_provider_method": "GET",
+      "expected_provider_path": "/v1/files/file-abc/content",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-file"}
+      ],
+      "expected_response_headers": [
+        {"name": "content-type", "value": "application/octet-stream"},
+        {"name": "content-disposition", "value": "attachment; filename=\"file-abc.pdf\""}
+      ],
+      "provider_response_content_type": "application/octet-stream",
+      "provider_response_headers": [
+        {"name": "content-disposition", "value": "attachment; filename=\"file-abc.pdf\""}
+      ],
+      "provider_response_base64": "AAH/FEJJTg==",
+      "response_body_base64": "AAH/FEJJTg=="
+    },
+    {
+      "name": "openai file upload forwards multipart bytes and purpose",
+      "provider": "openai",
+      "endpoint": "/v1/files",
+      "api_key": "sk-file-upload",
+      "content_type": "multipart/form-data; boundary=mg",
+      "request_body_base64": "LS1tZw0KQ29udGVudC1EaXNwb3NpdGlvbjogZm9ybS1kYXRhOyBuYW1lPSJwdXJwb3NlIg0KDQpmaW5lLXR1bmUNCi0tbWcNCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0iZmlsZSI7IGZpbGVuYW1lPSJ0cmFpbi5qc29ubCINCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbmwNCg0KeyJtZXNzYWdlcyI6W119DQotLW1nLS0NCg==",
+      "expected_provider_path": "/v1/files",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sk-file-upload"}
+      ],
+      "provider_body_contains": [
+        "name=\"purpose\"",
+        "fine-tune",
+        "filename=\"train.jsonl\""
+      ],
+      "expected_provider_content_type": "multipart/form-data; boundary=mg",
+      "expected_provider_body_base64": "LS1tZw0KQ29udGVudC1EaXNwb3NpdGlvbjogZm9ybS1kYXRhOyBuYW1lPSJwdXJwb3NlIg0KDQpmaW5lLXR1bmUNCi0tbWcNCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0iZmlsZSI7IGZpbGVuYW1lPSJ0cmFpbi5qc29ubCINCkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbmwNCg0KeyJtZXNzYWdlcyI6W119DQotLW1nLS0NCg==",
+      "provider_response_body": {
+        "id": "file-abc",
+        "object": "file",
+        "purpose": "fine-tune"
+      },
+      "response_body_contains": [
+        "\"id\":\"file-abc\"",
+        "\"purpose\":\"fine-tune\""
+      ]
+    },
+    {
+      "name": "sagemaker invocation forwards binary payload and target model header",
+      "provider": "sagemaker",
+      "endpoint": "/v1/endpoints/raw-endpoint/invocations",
+      "api_key": "sage-binary-key",
+      "content_type": "application/octet-stream",
+      "config": {
+        "aws_region": "us-west-2",
+        "amzn_sagemaker_target_model": "binary-model"
+      },
+      "request_body_base64": "AAH//lNBR0U=",
+      "expected_provider_path": "/endpoints/raw-endpoint/invocations",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sage-binary-key"},
+        {"name": "x-amzn-sagemaker-target-model", "value": "binary-model"}
+      ],
+      "expected_provider_content_type": "application/octet-stream",
+      "expected_provider_body_base64": "AAH//lNBR0U=",
+      "provider_response_content_type": "application/octet-stream",
+      "provider_response_base64": "AAH//lNBR0U=",
+      "response_body_base64": "AAH//lNBR0U="
+    },
+    {
+      "name": "azure openai raw proxy uses api key auth and preserves bytes",
+      "provider": "azure-openai",
+      "endpoint": "/v1/proxy/files",
+      "api_key": "sk-azure-raw",
+      "content_type": "application/octet-stream",
+      "request_body_base64": "QVoA/1BST1hZ",
+      "expected_provider_path": "/files",
+      "expected_provider_headers": [
+        {"name": "api-key", "value": "sk-azure-raw"}
+      ],
+      "forbidden_provider_headers": [
+        "authorization"
+      ],
+      "expected_provider_content_type": "application/octet-stream",
+      "expected_provider_body_base64": "QVoA/1BST1hZ",
+      "provider_response_body": {
+        "id": "az-file",
+        "object": "file"
+      },
+      "response_body_contains": [
+        "\"id\":\"az-file\""
+      ]
+    },
+    {
+      "name": "groq chat strips openai version path and annotates response",
+      "provider": "groq",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "groq-key",
+      "request_body": {
+        "model": "llama-3.1-8b-instant",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer groq-key"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"llama-3.1-8b-instant\""
+      ],
+      "provider_response_body": {
+        "id": "groq-1",
+        "object": "chat.completion",
+        "model": "llama-3.1-8b-instant",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "groq ok"}, "finish_reason": "stop"}
+        ],
+        "usage": {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"groq\"",
+        "\"content\":\"groq ok\"",
+        "\"total_tokens\":5"
+      ]
+    },
+    {
+      "name": "cerebras chat strips openai version path and annotates response",
+      "provider": "cerebras",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "cerebras-key",
+      "request_body": {
+        "model": "llama3.1-8b",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer cerebras-key"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"llama3.1-8b\""
+      ],
+      "provider_response_body": {
+        "id": "cerebras-1",
+        "object": "chat.completion",
+        "model": "llama3.1-8b",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "cerebras ok"}, "finish_reason": "stop"}
+        ],
+        "usage": {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"cerebras\"",
+        "\"content\":\"cerebras ok\""
+      ]
+    },
+    {
+      "name": "inception chat strips openai version path and annotates response",
+      "provider": "inception",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "inception-key",
+      "request_body": {
+        "model": "mercury-coder-small",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer inception-key"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"mercury-coder-small\""
+      ],
+      "provider_response_body": {
+        "id": "inception-1",
+        "object": "chat.completion",
+        "model": "mercury-coder-small",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "inception ok"}, "finish_reason": "stop"}
+        ]
+      },
+      "response_body_contains": [
+        "\"provider\":\"inception\"",
+        "\"content\":\"inception ok\""
+      ]
+    },
+    {
+      "name": "sambanova chat strips openai version path and annotates response",
+      "provider": "sambanova",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "sambanova-key",
+      "request_body": {
+        "model": "Meta-Llama-3.1-8B-Instruct",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer sambanova-key"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"Meta-Llama-3.1-8B-Instruct\""
+      ],
+      "provider_response_body": {
+        "id": "sambanova-1",
+        "object": "chat.completion",
+        "model": "Meta-Llama-3.1-8B-Instruct",
+        "choices": [
+          {"index": 0, "message": {"content": "sambanova ok"}, "finish_reason": "stop"}
+        ],
+        "usage": {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"sambanova\"",
+        "\"role\":\"assistant\"",
+        "\"content\":\"sambanova ok\""
+      ]
+    },
+    {
+      "name": "nvidia nim chat keeps v1 path and annotates response",
+      "provider": "nvidia-nim",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "nvidia-key",
+      "request_body": {
+        "model": "meta/llama-3.1-8b-instruct",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ]
+      },
+      "expected_provider_path": "/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer nvidia-key"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"meta/llama-3.1-8b-instruct\""
+      ],
+      "provider_response_body": {
+        "id": "nvidia-1",
+        "object": "chat.completion",
+        "model": "meta/llama-3.1-8b-instruct",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "nvidia ok"}, "finish_reason": "stop"}
+        ]
+      },
+      "response_body_contains": [
+        "\"provider\":\"nvidia-nim\"",
+        "\"content\":\"nvidia ok\""
+      ]
+    },
+    {
+      "name": "together ai chat preserves v1 path and annotates response",
+      "provider": "together-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "together-key",
+      "request_body": {
+        "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ],
+        "max_completion_tokens": 64
+      },
+      "expected_provider_path": "/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer together-key"}
+      ],
+      "provider_body_contains": [
+        "\"role\":\"system\"",
+        "\"max_tokens\":64"
+      ],
+      "provider_body_not_contains": [
+        "\"max_completion_tokens\""
+      ],
+      "provider_response_body": {
+        "id": "together-1",
+        "object": "chat.completion",
+        "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "together ok"}, "finish_reason": "eos"}
+        ],
+        "usage": {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"together-ai\"",
+        "\"content\":\"together ok\"",
+        "\"finish_reason\":\"stop\""
+      ]
+    },
+    {
+      "name": "ollama chat preserves v1 path without provider auth and annotates response",
+      "provider": "ollama",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "ignored-ollama-key",
+      "request_body": {
+        "model": "llama3.1",
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ],
+        "max_completion_tokens": 32
+      },
+      "expected_provider_path": "/v1/chat/completions",
+      "forbidden_provider_headers": [
+        "authorization"
+      ],
+      "provider_body_contains": [
+        "\"role\":\"system\"",
+        "\"max_tokens\":32"
+      ],
+      "provider_body_not_contains": [
+        "\"max_completion_tokens\""
+      ],
+      "provider_response_body": {
+        "id": "ollama-1",
+        "object": "chat.completion",
+        "model": "llama3.1",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "ollama ok"}, "finish_reason": "stop"}
+        ],
+        "usage": {"prompt_tokens": 2, "completion_tokens": 3, "total_tokens": 5}
+      },
+      "response_body_contains": [
+        "\"provider\":\"ollama\"",
+        "\"content\":\"ollama ok\""
+      ]
+    },
+    {
+      "name": "302ai models smoke routes through gateway",
+      "provider": "302ai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "302ai-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer 302ai-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "302ai-smoke"}]},
+      "response_body_contains": ["\"id\":\"302ai-smoke\""]
+    },
+    {
+      "name": "ai21 models smoke routes through gateway",
+      "provider": "ai21",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "ai21-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer ai21-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "ai21-smoke"}]},
+      "response_body_contains": ["\"id\":\"ai21-smoke\""]
+    },
+    {
+      "name": "aibadgr models smoke routes through gateway",
+      "provider": "aibadgr",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "aibadgr-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer aibadgr-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "aibadgr-smoke"}]},
+      "response_body_contains": ["\"id\":\"aibadgr-smoke\""]
+    },
+    {
+      "name": "anyscale models smoke routes through gateway",
+      "provider": "anyscale",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "anyscale-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer anyscale-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "anyscale-smoke"}]},
+      "response_body_contains": ["\"id\":\"anyscale-smoke\""]
+    },
+    {
+      "name": "bytez models smoke routes through gateway",
+      "provider": "bytez",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "bytez-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Key bytez-key"},
+        {"name": "user-agent", "value": "modelgate"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "bytez-smoke"}]},
+      "response_body_contains": ["\"id\":\"bytez-smoke\""]
+    },
+    {
+      "name": "cometapi models smoke routes through gateway",
+      "provider": "cometapi",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "cometapi-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer cometapi-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "cometapi-smoke"}]},
+      "response_body_contains": ["\"id\":\"cometapi-smoke\""]
+    },
+    {
+      "name": "dashscope models smoke routes through gateway",
+      "provider": "dashscope",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "dashscope-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer dashscope-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "dashscope-smoke"}]},
+      "response_body_contains": ["\"id\":\"dashscope-smoke\""]
+    },
+    {
+      "name": "deepbricks models smoke routes through gateway",
+      "provider": "deepbricks",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "deepbricks-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer deepbricks-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "deepbricks-smoke"}]},
+      "response_body_contains": ["\"id\":\"deepbricks-smoke\""]
+    },
+    {
+      "name": "deepinfra models smoke routes through gateway",
+      "provider": "deepinfra",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "deepinfra-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer deepinfra-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "deepinfra-smoke"}]},
+      "response_body_contains": ["\"id\":\"deepinfra-smoke\""]
+    },
+    {
+      "name": "featherless ai models smoke routes through gateway",
+      "provider": "featherless-ai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "featherless-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer featherless-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "featherless-smoke"}]},
+      "response_body_contains": ["\"id\":\"featherless-smoke\""]
+    },
+    {
+      "name": "gemini models smoke routes through gateway",
+      "provider": "gemini",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "gemini-key",
+      "request_body": {},
+      "expected_provider_path": "/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer gemini-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "gemini-smoke"}]},
+      "response_body_contains": ["\"id\":\"gemini-smoke\""]
+    },
+    {
+      "name": "github models smoke routes through gateway",
+      "provider": "github",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "github-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer github-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "github-smoke"}]},
+      "response_body_contains": ["\"id\":\"github-smoke\""]
+    },
+    {
+      "name": "hyperbolic models smoke routes through gateway",
+      "provider": "hyperbolic",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "hyperbolic-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer hyperbolic-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "hyperbolic-smoke"}]},
+      "response_body_contains": ["\"id\":\"hyperbolic-smoke\""]
+    },
+    {
+      "name": "inference net models smoke routes through gateway",
+      "provider": "inference-net",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "inference-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer inference-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "inference-smoke"}]},
+      "response_body_contains": ["\"id\":\"inference-smoke\""]
+    },
+    {
+      "name": "iointelligence models smoke routes through gateway",
+      "provider": "iointelligence",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "iointelligence-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer iointelligence-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "iointelligence-smoke"}]},
+      "response_body_contains": ["\"id\":\"iointelligence-smoke\""]
+    },
+    {
+      "name": "kluster ai models smoke routes through gateway",
+      "provider": "kluster-ai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "kluster-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer kluster-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "kluster-smoke"}]},
+      "response_body_contains": ["\"id\":\"kluster-smoke\""]
+    },
+    {
+      "name": "krutrim models smoke routes through gateway",
+      "provider": "krutrim",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "krutrim-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer krutrim-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "krutrim-smoke"}]},
+      "response_body_contains": ["\"id\":\"krutrim-smoke\""]
+    },
+    {
+      "name": "lambda models smoke routes through gateway",
+      "provider": "lambda",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "lambda-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer lambda-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "lambda-smoke"}]},
+      "response_body_contains": ["\"id\":\"lambda-smoke\""]
+    },
+    {
+      "name": "lemonfox ai models smoke routes through gateway",
+      "provider": "lemonfox-ai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "lemonfox-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer lemonfox-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "lemonfox-smoke"}]},
+      "response_body_contains": ["\"id\":\"lemonfox-smoke\""]
+    },
+    {
+      "name": "lepton models smoke routes through gateway",
+      "provider": "lepton",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "lepton-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer lepton-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "lepton-smoke"}]},
+      "response_body_contains": ["\"id\":\"lepton-smoke\""]
+    },
+    {
+      "name": "lingyi models smoke routes through gateway",
+      "provider": "lingyi",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "lingyi-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer lingyi-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "lingyi-smoke"}]},
+      "response_body_contains": ["\"id\":\"lingyi-smoke\""]
+    },
+    {
+      "name": "matterai models smoke routes through gateway",
+      "provider": "matterai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "matterai-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer matterai-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "matterai-smoke"}]},
+      "response_body_contains": ["\"id\":\"matterai-smoke\""]
+    },
+    {
+      "name": "meshy models smoke routes through gateway",
+      "provider": "meshy",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "meshy-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer meshy-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "meshy-smoke"}]},
+      "response_body_contains": ["\"id\":\"meshy-smoke\""]
+    },
+    {
+      "name": "milvus models smoke routes through gateway",
+      "provider": "milvus",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "milvus-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer milvus-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "milvus-smoke"}]},
+      "response_body_contains": ["\"id\":\"milvus-smoke\""]
+    },
+    {
+      "name": "modal models smoke routes through gateway",
+      "provider": "modal",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "modal-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer modal-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "modal-smoke"}]},
+      "response_body_contains": ["\"id\":\"modal-smoke\""]
+    },
+    {
+      "name": "monsterapi models smoke routes through gateway",
+      "provider": "monsterapi",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "monsterapi-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer monsterapi-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "monsterapi-smoke"}]},
+      "response_body_contains": ["\"id\":\"monsterapi-smoke\""]
+    },
+    {
+      "name": "moonshot models smoke routes through gateway",
+      "provider": "moonshot",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "moonshot-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer moonshot-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "moonshot-smoke"}]},
+      "response_body_contains": ["\"id\":\"moonshot-smoke\""]
+    },
+    {
+      "name": "ncompass models smoke routes through gateway",
+      "provider": "ncompass",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "ncompass-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer ncompass-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "ncompass-smoke"}]},
+      "response_body_contains": ["\"id\":\"ncompass-smoke\""]
+    },
+    {
+      "name": "nebius models smoke routes through gateway",
+      "provider": "nebius",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "nebius-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer nebius-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "nebius-smoke"}]},
+      "response_body_contains": ["\"id\":\"nebius-smoke\""]
+    },
+    {
+      "name": "nextbit models smoke routes through gateway",
+      "provider": "nextbit",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "nextbit-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer nextbit-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "nextbit-smoke"}]},
+      "response_body_contains": ["\"id\":\"nextbit-smoke\""]
+    },
+    {
+      "name": "nomic models smoke routes through gateway",
+      "provider": "nomic",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "nomic-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer nomic-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "nomic-smoke"}]},
+      "response_body_contains": ["\"id\":\"nomic-smoke\""]
+    },
+    {
+      "name": "novita ai models smoke routes through gateway",
+      "provider": "novita-ai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "novita-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer novita-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "novita-smoke"}]},
+      "response_body_contains": ["\"id\":\"novita-smoke\""]
+    },
+    {
+      "name": "nscale models smoke routes through gateway",
+      "provider": "nscale",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "nscale-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer nscale-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "nscale-smoke"}]},
+      "response_body_contains": ["\"id\":\"nscale-smoke\""]
+    },
+    {
+      "name": "nvidia models smoke routes through gateway",
+      "provider": "nvidia",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "nvidia-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer nvidia-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "nvidia-smoke"}]},
+      "response_body_contains": ["\"id\":\"nvidia-smoke\""]
+    },
+    {
+      "name": "oracle models smoke routes through gateway",
+      "provider": "oracle",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "oracle-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer oracle-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "oracle-smoke"}]},
+      "response_body_contains": ["\"id\":\"oracle-smoke\""]
+    },
+    {
+      "name": "ovhcloud models smoke routes through gateway",
+      "provider": "ovhcloud",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "ovhcloud-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer ovhcloud-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "ovhcloud-smoke"}]},
+      "response_body_contains": ["\"id\":\"ovhcloud-smoke\""]
+    },
+    {
+      "name": "palm models smoke routes through gateway",
+      "provider": "palm",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "ignored-palm-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "forbidden_provider_headers": ["authorization"],
+      "provider_response_body": {"object": "list", "data": [{"id": "palm-smoke"}]},
+      "response_body_contains": ["\"id\":\"palm-smoke\""]
+    },
+    {
+      "name": "predibase models smoke routes through gateway",
+      "provider": "predibase",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "predibase-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer predibase-key"},
+        {"name": "Accept", "value": "application/json"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "predibase-smoke"}]},
+      "response_body_contains": ["\"id\":\"predibase-smoke\""]
+    },
+    {
+      "name": "qdrant models smoke routes through gateway",
+      "provider": "qdrant",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "qdrant-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "api-key", "value": "Bearer qdrant-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "qdrant-smoke"}]},
+      "response_body_contains": ["\"id\":\"qdrant-smoke\""]
+    },
+    {
+      "name": "recraft ai models smoke routes through gateway",
+      "provider": "recraft-ai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "recraft-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer recraft-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "recraft-smoke"}]},
+      "response_body_contains": ["\"id\":\"recraft-smoke\""]
+    },
+    {
+      "name": "reka ai models smoke routes through gateway",
+      "provider": "reka-ai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "reka-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "x-api-key", "value": "reka-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "reka-smoke"}]},
+      "response_body_contains": ["\"id\":\"reka-smoke\""]
+    },
+    {
+      "name": "replicate models smoke routes through gateway",
+      "provider": "replicate",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "replicate-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer replicate-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "replicate-smoke"}]},
+      "response_body_contains": ["\"id\":\"replicate-smoke\""]
+    },
+    {
+      "name": "segmind models smoke routes through gateway",
+      "provider": "segmind",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "segmind-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "x-api-key", "value": "segmind-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "segmind-smoke"}]},
+      "response_body_contains": ["\"id\":\"segmind-smoke\""]
+    },
+    {
+      "name": "siliconflow models smoke routes through gateway",
+      "provider": "siliconflow",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "siliconflow-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer siliconflow-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "siliconflow-smoke"}]},
+      "response_body_contains": ["\"id\":\"siliconflow-smoke\""]
+    },
+    {
+      "name": "tripo3d models smoke routes through gateway",
+      "provider": "tripo3d",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "tripo3d-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer tripo3d-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "tripo3d-smoke"}]},
+      "response_body_contains": ["\"id\":\"tripo3d-smoke\""]
+    },
+    {
+      "name": "triton models smoke routes through gateway",
+      "provider": "triton",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "ignored-triton-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "forbidden_provider_headers": ["authorization"],
+      "provider_response_body": {"object": "list", "data": [{"id": "triton-smoke"}]},
+      "response_body_contains": ["\"id\":\"triton-smoke\""]
+    },
+    {
+      "name": "upstage models smoke routes through gateway",
+      "provider": "upstage",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "upstage-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer upstage-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "upstage-smoke"}]},
+      "response_body_contains": ["\"id\":\"upstage-smoke\""]
+    },
+    {
+      "name": "x ai models smoke routes through gateway",
+      "provider": "x-ai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "xai-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer xai-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "xai-smoke"}]},
+      "response_body_contains": ["\"id\":\"xai-smoke\""]
+    },
+    {
+      "name": "z ai models smoke routes through gateway",
+      "provider": "z-ai",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "zai-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer zai-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "zai-smoke"}]},
+      "response_body_contains": ["\"id\":\"zai-smoke\""]
+    },
+    {
+      "name": "zhipu models smoke routes through gateway",
+      "provider": "zhipu",
+      "endpoint": "/v1/models",
+      "method": "GET",
+      "expected_provider_method": "GET",
+      "api_key": "zhipu-key",
+      "request_body": {},
+      "expected_provider_path": "/v1/models",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer zhipu-key"}
+      ],
+      "provider_response_body": {"object": "list", "data": [{"id": "zhipu-smoke"}]},
+      "response_body_contains": ["\"id\":\"zhipu-smoke\""]
+    },
+    {
+      "name": "ai21 chat maps to model chat endpoint body and response",
+      "provider": "ai21",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "ai21-key",
+      "request_body": {
+        "model": "jamba-mini",
+        "messages": [
+          {"role": "system", "content": "Be direct."},
+          {"role": "user", "content": "Hello"}
+        ],
+        "max_completion_tokens": 64,
+        "top_p": 0.8,
+        "presence_penalty": 0.2,
+        "stop": ["END"]
+      },
+      "expected_provider_path": "/jamba-mini/chat",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer ai21-key"}
+      ],
+      "provider_body_contains": [
+        "\"system\":\"Be direct.\"",
+        "\"messages\":[{\"text\":\"Hello\",\"role\":\"user\"}]",
+        "\"maxTokens\":64",
+        "\"topP\":0.8",
+        "\"presencePenalty\":{\"scale\":0.2}",
+        "\"stopSequences\":[\"END\"]"
+      ],
+      "provider_body_not_contains": [
+        "\"model\"",
+        "\"max_completion_tokens\""
+      ],
+      "provider_response_body": {
+        "id": "ai21-chat-1",
+        "outputs": [
+          {"text": "ai21 ok", "finishReason": {"reason": "stop"}}
+        ]
+      },
+      "response_body_contains": [
+        "\"provider\":\"ai21\"",
+        "\"object\":\"chat.completion\"",
+        "\"content\":\"ai21 ok\"",
+        "\"finish_reason\":\"stop\""
+      ]
+    },
+    {
+      "name": "bytez chat maps to model version endpoint params and response",
+      "provider": "bytez",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "bytez-key",
+      "request_body": {
+        "model": "org/model-a",
+        "version": "3",
+        "messages": [
+          {"role": "user", "content": "Hello"}
+        ],
+        "max_tokens": 32,
+        "temperature": 0.3,
+        "top_p": 0.7
+      },
+      "expected_provider_path": "/models/v3/org/model-a",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Key bytez-key"},
+        {"name": "user-agent", "value": "modelgate"}
+      ],
+      "provider_body_contains": [
+        "\"params\":{\"max_new_tokens\":32,\"temperature\":0.3,\"top_p\":0.7}",
+        "\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]"
+      ],
+      "provider_body_not_contains": [
+        "\"model\"",
+        "\"version\"",
+        "\"max_tokens\""
+      ],
+      "provider_response_body": {
+        "output": {"role": "assistant", "content": "bytez ok"}
+      },
+      "response_body_contains": [
+        "\"provider\":\"bytez\"",
+        "\"content\":\"bytez ok\"",
+        "\"prompt_tokens\":-1"
+      ]
+    },
+    {
+      "name": "oracle chat maps to generative ai action body and response",
+      "provider": "oracle",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "oracle-key",
+      "config": {
+        "oracle_region": "us-ashburn-1",
+        "oracle_api_version": "20231130",
+        "oracle_compartment_id": "ocid1.compartment.oc1..test"
+      },
+      "request_body": {
+        "model": "cohere.command-r-16k",
+        "messages": [
+          {"role": "system", "content": "Use policy."},
+          {"role": "user", "content": "Hello"}
+        ],
+        "max_completion_tokens": 16,
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "stop": "END"
+      },
+      "expected_provider_path": "/20231130/actions/chat",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer oracle-key"}
+      ],
+      "provider_body_contains": [
+        "\"chatRequest\":{\"apiFormat\":\"GENERIC\"",
+        "\"role\":\"SYSTEM\"",
+        "\"role\":\"USER\"",
+        "\"maxTokens\":16",
+        "\"topP\":0.9",
+        "\"stop\":[\"END\"]",
+        "\"compartmentId\":\"ocid1.compartment.oc1..test\"",
+        "\"servingMode\":{\"servingType\":\"ON_DEMAND\",\"modelId\":\"cohere.command-r-16k\"}"
+      ],
+      "provider_response_body": {
+        "modelId": "cohere.command-r-16k",
+        "chatResponse": {
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "ASSISTANT",
+                "content": [{"type": "TEXT", "text": "oracle ok"}]
+              },
+              "finishReason": "STOP"
+            }
+          ],
+          "usage": {"promptTokens": 2, "completionTokens": 3, "totalTokens": 5}
+        }
+      },
+      "response_body_contains": [
+        "\"provider\":\"oracle\"",
+        "\"model\":\"cohere.command-r-16k\"",
+        "\"content\":\"oracle ok\"",
+        "\"finish_reason\":\"stop\"",
+        "\"total_tokens\":5"
+      ]
+    },
+    {
+      "name": "palm chat maps to generate message endpoint body and response",
+      "provider": "palm",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "palm-key",
+      "request_body": {
+        "model": "chat-bison-001",
+        "messages": [
+          {"role": "system", "content": "Be short."},
+          {"role": "user", "content": "Hello"}
+        ],
+        "max_tokens": 32,
+        "temperature": 0.4
+      },
+      "expected_provider_path": "/models/chat-bison-001:generateMessage?key=palm-key",
+      "forbidden_provider_headers": ["authorization"],
+      "provider_body_contains": [
+        "\"prompt\":{\"messages\":[{\"author\":\"system\",\"content\":\"Be short.\"},{\"author\":\"user\",\"content\":\"Hello\"}]}",
+        "\"maxOutputTokens\":32"
+      ],
+      "provider_body_not_contains": [
+        "\"model\"",
+        "\"max_tokens\""
+      ],
+      "provider_response_body": {
+        "candidates": [
+          {"content": "palm ok"}
+        ]
+      },
+      "response_body_contains": [
+        "\"provider\":\"palm\"",
+        "\"object\":\"chat.completion\"",
+        "\"content\":\"palm ok\""
+      ]
+    },
+    {
+      "name": "predibase chat maps user deployment endpoint body and annotates response",
+      "provider": "predibase",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "predibase-key",
+      "request_body": {
+        "model": "pb-user:llama-3-8b",
+        "user": "pb-user",
+        "messages": [
+          {"role": "developer", "content": "Policy"}
+        ],
+        "max_completion_tokens": 48
+      },
+      "expected_provider_path": "/pb-user/deployments/v2/llms/pb-user/v1/chat/completions",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer predibase-key"},
+        {"name": "Accept", "value": "application/json"}
+      ],
+      "provider_body_contains": [
+        "\"model\":\"llama-3-8b\"",
+        "\"role\":\"system\"",
+        "\"max_tokens\":48"
+      ],
+      "provider_body_not_contains": [
+        "\"max_completion_tokens\""
+      ],
+      "provider_response_body": {
+        "id": "predibase-1",
+        "object": "chat.completion",
+        "choices": [
+          {"index": 0, "message": {"role": "assistant", "content": "predibase ok"}, "finish_reason": "stop"}
+        ]
+      },
+      "response_body_contains": [
+        "\"provider\":\"predibase\"",
+        "\"content\":\"predibase ok\""
+      ]
+    },
+    {
+      "name": "reka chat maps conversation history and response",
+      "provider": "reka-ai",
+      "endpoint": "/v1/chat/completions",
+      "api_key": "reka-key",
+      "request_body": {
+        "model": "reka-core",
+        "messages": [
+          {"role": "user", "content": "Hello"},
+          {"role": "assistant", "content": "Hi"},
+          {"role": "user", "content": "Again"}
+        ],
+        "max_completion_tokens": 32,
+        "top_p": 0.8,
+        "stop": ["END"],
+        "seed": 7,
+        "top_k": 4
+      },
+      "expected_provider_path": "/chat",
+      "expected_provider_headers": [
+        {"name": "x-api-key", "value": "reka-key"}
+      ],
+      "provider_body_contains": [
+        "\"model_name\":\"reka-core\"",
+        "\"conversation_history\":[{\"type\":\"human\",\"text\":\"Hello\"},{\"type\":\"model\",\"text\":\"Hi\"},{\"type\":\"human\",\"text\":\"Again\"}]",
+        "\"request_output_len\":32",
+        "\"runtime_top_p\":0.8",
+        "\"stop_words\":[\"END\"]",
+        "\"random_seed\":7",
+        "\"runtime_top_k\":4"
+      ],
+      "provider_body_not_contains": [
+        "\"model\":",
+        "\"messages\"",
+        "\"max_completion_tokens\""
+      ],
+      "provider_response_body": {
+        "text": "reka ok",
+        "finish_reason": "stop",
+        "metadata": {"input_tokens": 2, "generated_tokens": 3}
+      },
+      "response_body_contains": [
+        "\"provider\":\"reka-ai\"",
+        "\"content\":\"reka ok\"",
+        "\"prompt_tokens\":2",
+        "\"completion_tokens\":3"
+      ]
+    },
+    {
+      "name": "nomic embeddings map input and response",
+      "provider": "nomic",
+      "endpoint": "/v1/embeddings",
+      "api_key": "nomic-key",
+      "request_body": {
+        "model": "nomic-embed-text-v1.5",
+        "input": "hello"
+      },
+      "expected_provider_path": "/embedding/text",
+      "expected_provider_headers": [
+        {"name": "authorization", "value": "Bearer nomic-key"}
+      ],
+      "provider_body_contains": [
+        "\"texts\":[\"hello\"]"
+      ],
+      "provider_body_not_contains": [
+        "\"input\""
+      ],
+      "provider_response_body": {
+        "model": "nomic-embed-text-v1.5",
+        "embeddings": [[0.1, 0.2]],
+        "usage": {"prompt_tokens": 2, "total_tokens": 2}
+      },
+      "response_body_contains": [
+        "\"provider\":\"nomic\"",
+        "\"object\":\"embedding\"",
+        "\"prompt_tokens\":2"
+      ]
+    },
+    {
+      "name": "triton completions map generate body and response",
+      "provider": "triton",
+      "endpoint": "/v1/completions",
+      "api_key": "ignored-triton-key",
+      "request_body": {
+        "model": "triton-llm",
+        "prompt": "Hello",
+        "stop": ["END"]
+      },
+      "expected_provider_path": "/generate",
+      "forbidden_provider_headers": ["authorization"],
+      "provider_body_contains": [
+        "\"text_input\":\"Hello\"",
+        "\"stop_words\":[\"END\"]",
+        "\"max_tokens\":100",
+        "\"temperature\":0.7",
+        "\"top_p\":0.7",
+        "\"top_k\":50"
+      ],
+      "provider_body_not_contains": [
+        "\"model\"",
+        "\"prompt\""
+      ],
+      "provider_response_body": {
+        "model_name": "triton-llm",
+        "text_output": "triton ok"
+      },
+      "response_body_contains": [
+        "\"provider\":\"triton\"",
+        "\"object\":\"text_completion\"",
+        "\"text\":\"triton ok\""
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "strategy": {
+    "mode": "fallback",
+    "on_status_codes": [429, 500, 502, 503, 504]
+  },
+  "targets": [
+    {
+      "name": "primary-openai",
+      "provider": "openai",
+      "api_key": "${OPENAI_API_KEY}",
+      "weight": 1,
+      "request_timeout": 45000
+    },
+    {
+      "name": "secondary-anthropic",
+      "provider": "anthropic",
+      "api_key": "${ANTHROPIC_API_KEY}",
+      "weight": 1,
+      "request_timeout": 45000
+    }
+  ],
+  "cache": {
+    "mode": "simple",
+    "max_age": 300000
+  }
+}

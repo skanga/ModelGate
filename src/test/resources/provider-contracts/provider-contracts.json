@@ -1,0 +1,168 @@
+{
+  "request_transforms": [
+    {
+      "name": "anthropic chat maps OpenAI chat to messages",
+      "endpoint": "/v1/chat/completions",
+      "method": "POST",
+      "headers": {
+        "content-type": "application/json",
+        "x-modelgate-config": "{\"provider\":\"anthropic\",\"api_key\":\"sk-anthropic\"}"
+      },
+      "body": {
+        "model": "claude-3-5-sonnet-latest",
+        "messages": [
+          {"role": "system", "content": "Be terse."},
+          {"role": "user", "content": "Hello"}
+        ],
+        "max_tokens": 64
+      },
+      "expected_url": "https://api.anthropic.com/v1/messages",
+      "expected_headers": [
+        {"name": "x-api-key", "value": "sk-anthropic"},
+        {"name": "anthropic-version", "value": "2023-06-01"}
+      ],
+      "body_contains": [
+        "\"system\":[{\"type\":\"text\",\"text\":\"Be terse.\"}]",
+        "\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]"
+      ],
+      "body_not_contains": []
+    },
+    {
+      "name": "workers ai image route includes account and model path",
+      "endpoint": "/v1/images/generations",
+      "method": "POST",
+      "headers": {
+        "content-type": "application/json",
+        "x-modelgate-config": "{\"provider\":\"workers-ai\",\"api_key\":\"cf-key\",\"workers_ai_account_id\":\"account-123\"}"
+      },
+      "body": {
+        "model": "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+        "prompt": "mountain"
+      },
+      "expected_url": "https://api.cloudflare.com/client/v4/accounts/account-123/ai/run/@cf/stabilityai/stable-diffusion-xl-base-1.0",
+      "expected_headers": [
+        {"name": "authorization", "value": "Bearer cf-key"}
+      ],
+      "body_contains": ["\"prompt\":\"\\n\\nHuman: mountain\\n\\nAssistant:\""],
+      "body_not_contains": ["\"model\""]
+    },
+    {
+      "name": "perplexity normalizes developer role and max completion tokens",
+      "endpoint": "/v1/chat/completions",
+      "method": "POST",
+      "headers": {
+        "content-type": "application/json",
+        "x-modelgate-config": "{\"provider\":\"perplexity-ai\",\"api_key\":\"pplx-key\"}"
+      },
+      "body": {
+        "model": "sonar",
+        "messages": [{"role": "developer", "content": "Policy"}],
+        "max_completion_tokens": 50,
+        "frequency_penalty": 0.1
+      },
+      "expected_url": "https://api.perplexity.ai/chat/completions",
+      "expected_headers": [
+        {"name": "authorization", "value": "Bearer pplx-key"}
+      ],
+      "body_contains": [
+        "\"role\":\"system\"",
+        "\"max_tokens\":50",
+        "\"repetition_penalty\":0.1"
+      ],
+      "body_not_contains": ["\"max_completion_tokens\"", "\"frequency_penalty\""]
+    },
+    {
+      "name": "sagemaker maps OpenAI endpoint to invocation endpoint",
+      "endpoint": "/v1/endpoints/my-endpoint/invocations",
+      "method": "POST",
+      "headers": {
+        "content-type": "application/json",
+        "x-modelgate-config": "{\"provider\":\"sagemaker\",\"api_key\":\"sk-sage\",\"aws_region\":\"eu-west-1\",\"amzn_sagemaker_target_model\":\"model-a\"}"
+      },
+      "body": {
+        "inputs": "hello"
+      },
+      "expected_url": "https://runtime.sagemaker.eu-west-1.amazonaws.com/endpoints/my-endpoint/invocations",
+      "expected_headers": [
+        {"name": "x-amzn-sagemaker-target-model", "value": "model-a"}
+      ],
+      "body_contains": ["\"inputs\":\"hello\""],
+      "body_not_contains": []
+    }
+  ],
+  "response_transforms": [
+    {
+      "name": "bedrock converse response maps text, usage, and finish reason",
+      "provider": "bedrock",
+      "endpoint": "/v1/chat/completions",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": {
+        "output": {"message": {"content": [{"text": "hello"}]}},
+        "stopReason": "end_turn",
+        "usage": {"inputTokens": 2, "outputTokens": 3, "totalTokens": 5}
+      },
+      "body_contains": [
+        "\"provider\":\"bedrock\"",
+        "\"content\":\"hello\"",
+        "\"finish_reason\":\"stop\"",
+        "\"total_tokens\":5"
+      ],
+      "body_not_contains": []
+    },
+    {
+      "name": "cohere chat response maps content and token usage",
+      "provider": "cohere",
+      "endpoint": "/v1/chat/completions",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": {
+        "id": "co-1",
+        "message": {"content": [{"type": "text", "text": "hello"}]},
+        "finish_reason": "COMPLETE",
+        "usage": {"tokens": {"input_tokens": 2, "output_tokens": 3}}
+      },
+      "body_contains": [
+        "\"id\":\"co-1\"",
+        "\"provider\":\"cohere\"",
+        "\"content\":\"hello\"",
+        "\"prompt_tokens\":2",
+        "\"completion_tokens\":3"
+      ],
+      "body_not_contains": []
+    },
+    {
+      "name": "stability image response maps base64 artifacts",
+      "provider": "stability-ai",
+      "endpoint": "/v1/images/generations",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": {
+        "artifacts": [{"base64": "aW1n"}]
+      },
+      "body_contains": [
+        "\"provider\":\"stability-ai\"",
+        "\"b64_json\":\"aW1n\""
+      ],
+      "body_not_contains": []
+    },
+    {
+      "name": "voyage embedding response normalizes prompt tokens",
+      "provider": "voyage",
+      "endpoint": "/v1/embeddings",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "body": {
+        "object": "list",
+        "data": [{"object": "embedding", "embedding": [0.1], "index": 0}],
+        "model": "voyage-3",
+        "usage": {"total_tokens": 5}
+      },
+      "body_contains": [
+        "\"provider\":\"voyage\"",
+        "\"prompt_tokens\":5"
+      ],
+      "body_not_contains": []
+    }
+  ]
+}
