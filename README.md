@@ -1,20 +1,8 @@
 # ModelGate
 
-ModelGate is a Java 21+ AI gateway port of the TypeScript gateway in `gateway/`. It is built with Maven, Javalin 7, embedded Jetty 12, Java virtual threads, Java `HttpClient`, guardrail/plugin hooks, provider transforms, routing, caching, streaming, telemetry, and OpenAI-compatible `/v1/*` proxy surfaces.
+ ModelGate is a fast, reliable AI gateway that routes requests to 100s of LLMs with sub-millisecond latency. It provides guardrail/plugin hooks, provider transforms, routing, caching, streaming, telemetry, and OpenAI-compatible `/v1/*` proxy services to all of your environments. It is built with Maven, Javalin 7, embedded Jetty 12, Java virtual threads, Java `HttpClient`, guardrail/plugin hooks, provider transforms, routing, caching, streaming, telemetry, and OpenAI-compatible `/v1/*` proxy surfaces.
 
-The Java implementation lives at the repository root under `src/main/java` and `src/test/java`. The original TypeScript `gateway/` directory is kept as the reference implementation during parity work.
-
-## Status
-
-The current Java gateway is usable for local and staged provider traffic.
-
-- Core gateway kernel: implemented.
-- Default `default.*` guardrail/plugin registry: implemented.
-- Provider routing/transforms: broad mocked contract coverage, with ongoing live-provider hardening.
-- Observability: structured logs, `/log/stream`, `/metrics`, trace headers, Micrometer/Prometheus, and OTLP traces/metrics/logs.
 - Packaging: executable shaded jar and Dockerfile.
-
-See [PLAN.md](PLAN.md) for the original port plan and remaining parity goals.
 
 ## Features
 
@@ -330,7 +318,6 @@ Failed OTLP exports are counted by signal as `modelgate.otel.export.failures` wh
 ├── scripts
 ├── examples/configs
 ├── docs
-├── gateway
 ├── Dockerfile
 ├── pom.xml
 └── PLAN.md

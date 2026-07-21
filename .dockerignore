@@ -1,6 +1,5 @@
 .codex/
 .idea/
-gateway/
 target/
 docs/
 examples/

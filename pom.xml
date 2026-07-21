@@ -110,18 +110,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>gateway/src/data</directory>
-        <targetPath>modelgate</targetPath>
-        <includes>
-          <include>models.json</include>
-        </includes>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

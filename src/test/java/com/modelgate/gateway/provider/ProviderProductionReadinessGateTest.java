@@ -25,6 +25,19 @@ class ProviderProductionReadinessGateTest {
   }
 
   @Test
+  void productionReadyProviderWithoutStructuredEvidenceFailsClosed() throws Exception {
+    ProviderProductionReadinessGate.Result result = ProviderProductionReadinessGate.check(
+        readJson("/provider-contracts/provider-validation-ready-missing-evidence-fixture.json"),
+        readJson("/provider-contracts/live-validation-ready-fixture.json"),
+        "openai");
+
+    assertThat(result.exitCode()).isEqualTo(2);
+    assertThat(result.problems()).anySatisfy(problem -> assertThat(problem)
+        .contains("openai")
+        .contains("evidence"));
+  }
+
+  @Test
   void knownProviderThatIsNotProductionReadyFailsClosed() throws Exception {
     ProviderProductionReadinessGate.Result result = ProviderProductionReadinessGate.check(
         readJson("/provider-contracts/provider-validation-matrix.json"),

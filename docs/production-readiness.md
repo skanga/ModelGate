@@ -39,7 +39,7 @@ Use this before promoting a ModelGate build.
 - [ ] Deploy using rolling or canary strategy.
 - [ ] Keep the previous jar/image available for rollback.
 - [ ] Run smoke traffic against `/v1/models` and one real provider route.
-- [ ] Check `src/test/resources/provider-contracts/provider-validation-matrix.json` for the provider. Do not treat a provider as production-ready unless live or recorded evidence exists for the exact account/path being enabled.
+- [ ] Check `src/test/resources/provider-contracts/provider-validation-matrix.json` for the provider. Do not treat a provider as production-ready unless live or recorded evidence exists for the exact account/path being enabled and the row has a valid `evidence` object.
 - [ ] Run `cmd /c --% mvn -q -Pprovider-readiness -Dmodelgate.provider.ready=<provider> test` before enabling a provider in production traffic.
 - [ ] Validate guardrail denial and allowed-flow paths.
 - [ ] Verify telemetry export after deployment.

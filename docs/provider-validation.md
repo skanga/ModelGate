@@ -16,7 +16,27 @@ The validation closure matrix is [provider-validation-matrix.json](../src/test/r
 | `recorded-contract` | Recorded upstream contracts exist for the provider. |
 | `live-smoke` | An opt-in live validation scenario exists. Run it with real credentials before enabling production traffic. |
 
-`production_ready` remains `false` in the matrix until live or recorded evidence is captured for the exact provider/account path being enabled.
+`production_ready` remains `false` in the matrix until live or recorded evidence is captured for the exact provider/account path being enabled. A ready row must include structured evidence; the Java and Python readiness gates fail closed when `production_ready=true` is set without it.
+
+Ready evidence shape:
+
+```json
+{
+  "provider": "openai",
+  "validation_tier": "live-smoke",
+  "live_validation": true,
+  "recorded_contract": true,
+  "production_ready": true,
+  "evidence": {
+    "type": "live",
+    "scenario": "openai chat live smoke",
+    "validated_at": "2026-05-02",
+    "source": "ProviderLiveValidationTest"
+  }
+}
+```
+
+`evidence.type` must be `live` or `recorded`. Live evidence must name a scenario from `live-validation.json`. Recorded evidence requires `recorded_contract=true`. `validated_at` and `source` are required for both evidence types.
 
 ## Offline Validation Report
 
@@ -37,7 +57,7 @@ python scripts\modelgate_request.py --validation-check-ready openai
 python scripts\modelgate_request.py --validation-check-ready all
 ```
 
-The readiness gate is also offline. It returns `0` only when every selected matrix row is `production_ready: true` and the matrix/manifest drift check passes. It returns `1` for known providers that are not production-ready, which makes it suitable for CI or deployment scripts that need to fail closed before rollout.
+The readiness gate is also offline. It returns `0` only when every selected matrix row is `production_ready: true`, has valid structured evidence, and the matrix/manifest drift check passes. It returns `1` for known providers that are not production-ready, which makes it suitable for CI or deployment scripts that need to fail closed before rollout.
 
 Exit codes:
 
@@ -45,7 +65,7 @@ Exit codes:
 | --- | --- |
 | `0` | Report generated, or readiness gate passed. |
 | `1` | Readiness gate selected known providers that are not `production_ready`. |
-| `2` | Unknown provider, unreadable/malformed JSON, or matrix/manifest drift. |
+| `2` | Unknown provider, unreadable/malformed JSON, matrix/manifest drift, or invalid readiness evidence. |
 
 The same readiness gate semantics are available from Maven. Normal `mvn verify` always checks matrix/manifest drift, while the provider readiness gate is opt-in because the matrix intentionally starts with providers marked `production_ready: false`.
 

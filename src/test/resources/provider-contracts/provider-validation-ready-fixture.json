@@ -7,6 +7,12 @@
       "recorded_contract": true,
       "live_validation": true,
       "production_ready": true,
+      "evidence": {
+        "type": "live",
+        "scenario": "openai chat live smoke",
+        "validated_at": "2026-05-02",
+        "source": "ProviderLiveValidationTest"
+      },
       "notes": "Fixture provider with complete production readiness evidence."
     }
   ]

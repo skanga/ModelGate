@@ -29,6 +29,11 @@ final class ProviderProductionReadinessGate {
       return new Result(2, List.of(), List.of("provider " + selector + " was not found in validation matrix"));
     }
 
+    List<String> evidenceProblems = productionEvidenceProblems(selectedProviders, liveScenarios);
+    if (!evidenceProblems.isEmpty()) {
+      return new Result(2, providerIds(selectedProviders), evidenceProblems);
+    }
+
     List<JsonNode> notReady = selectedProviders.stream()
         .filter(provider -> !provider.path("production_ready").asBoolean(false))
         .toList();
@@ -104,6 +109,67 @@ final class ProviderProductionReadinessGate {
         .filter(entry -> !liveScenarios.containsKey(entry.getKey()))
         .forEach(entry -> drift.add(entry.getKey() + " is marked live_validation but has no live scenario"));
     return drift;
+  }
+
+  private static List<String> productionEvidenceProblems(
+      List<JsonNode> selectedProviders,
+      Map<String, List<JsonNode>> liveScenarios) {
+    List<String> problems = new ArrayList<>();
+    for (JsonNode provider : selectedProviders) {
+      if (!provider.path("production_ready").asBoolean(false)) {
+        continue;
+      }
+      String providerId = provider.path("provider").asText();
+      JsonNode evidence = provider.path("evidence");
+      if (!evidence.isObject()) {
+        problems.add(providerId + " production_ready=true requires structured evidence");
+        continue;
+      }
+      String type = evidence.path("type").asText("").trim().toLowerCase(Locale.ROOT);
+      if (!"live".equals(type) && !"recorded".equals(type)) {
+        problems.add(providerId + " evidence.type must be live or recorded");
+      }
+      if (evidence.path("validated_at").asText("").isBlank()) {
+        problems.add(providerId + " evidence.validated_at must not be blank");
+      }
+      if (evidence.path("source").asText("").isBlank()) {
+        problems.add(providerId + " evidence.source must not be blank");
+      }
+      if ("live".equals(type)) {
+        validateLiveEvidence(provider, evidence, liveScenarios, problems);
+      } else if ("recorded".equals(type)) {
+        validateRecordedEvidence(provider, problems);
+      }
+    }
+    return problems;
+  }
+
+  private static void validateLiveEvidence(
+      JsonNode provider,
+      JsonNode evidence,
+      Map<String, List<JsonNode>> liveScenarios,
+      List<String> problems) {
+    String providerId = provider.path("provider").asText();
+    if (!provider.path("live_validation").asBoolean(false)) {
+      problems.add(providerId + " live evidence requires live_validation=true");
+    }
+    String scenarioName = evidence.path("scenario").asText("").trim();
+    if (scenarioName.isBlank()) {
+      problems.add(providerId + " live evidence.scenario must not be blank");
+      return;
+    }
+    boolean scenarioExists = liveScenarios.getOrDefault(providerId.toLowerCase(Locale.ROOT), List.of()).stream()
+        .anyMatch(scenario -> scenarioName.equals(scenario.path("name").asText()));
+    if (!scenarioExists) {
+      problems.add(providerId + " live evidence.scenario does not match a live validation scenario");
+    }
+  }
+
+  private static void validateRecordedEvidence(JsonNode provider, List<String> problems) {
+    String providerId = provider.path("provider").asText();
+    if (!provider.path("recorded_contract").asBoolean(false)) {
+      problems.add(providerId + " recorded evidence requires recorded_contract=true");
+    }
   }
 
   private static List<JsonNode> selectedProviders(Map<String, JsonNode> providers, String normalizedSelector) {

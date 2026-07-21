@@ -221,6 +221,11 @@ def validation_check_ready(matrix_path: Path, manifest_path: Path, selector: str
         return 2
 
     providers = report["providers"]
+    evidence_problems = production_evidence_problems(providers)
+    if evidence_problems:
+        print("error: provider validation evidence is incomplete: " + "; ".join(evidence_problems), file=sys.stderr)
+        return 2
+
     not_ready = [
         provider
         for provider in providers
@@ -249,6 +254,36 @@ def validation_check_ready(matrix_path: Path, manifest_path: Path, selector: str
         provider = providers[0]
         print(f"{provider['provider']} production_ready=true validation_tier={provider.get('validation_tier')}")
     return 0
+
+
+def production_evidence_problems(providers: list[dict[str, Any]]) -> list[str]:
+    problems: list[str] = []
+    for provider in providers:
+        if provider.get("production_ready") is not True:
+            continue
+        provider_id = str(provider.get("provider", ""))
+        evidence = provider.get("evidence")
+        if not isinstance(evidence, dict):
+            problems.append(f"{provider_id} production_ready=true requires structured evidence")
+            continue
+        evidence_type = str(evidence.get("type", "")).strip().lower()
+        if evidence_type not in {"live", "recorded"}:
+            problems.append(f"{provider_id} evidence.type must be live or recorded")
+        if not has_text(str(evidence.get("validated_at", ""))):
+            problems.append(f"{provider_id} evidence.validated_at must not be blank")
+        if not has_text(str(evidence.get("source", ""))):
+            problems.append(f"{provider_id} evidence.source must not be blank")
+        if evidence_type == "live":
+            if provider.get("live_validation") is not True:
+                problems.append(f"{provider_id} live evidence requires live_validation=true")
+            scenario = str(evidence.get("scenario", "")).strip()
+            if not scenario:
+                problems.append(f"{provider_id} live evidence.scenario must not be blank")
+            elif scenario not in provider.get("live_scenarios", []):
+                problems.append(f"{provider_id} live evidence.scenario does not match a live validation scenario")
+        elif evidence_type == "recorded" and provider.get("recorded_contract") is not True:
+            problems.append(f"{provider_id} recorded evidence requires recorded_contract=true")
+    return problems
 
 
 def validation_report(

@@ -547,6 +547,20 @@ class ModelGateRequestTest(unittest.TestCase):
         self.assertEqual(0, exit_code)
         self.assertIn("openai production_ready=true", stdout.getvalue())
 
+    def test_validation_check_ready_requires_structured_evidence(self):
+        fixture_dir = Path(__file__).resolve().parent / "fixtures"
+        stderr = io.StringIO()
+
+        with contextlib.redirect_stderr(stderr):
+            exit_code = modelgate_request.main([
+                "--validation-check-ready", "openai",
+                "--validation-matrix", str(fixture_dir / "validation_matrix_ready_missing_evidence.json"),
+                "--live-manifest", str(fixture_dir / "validation_live_ready.json"),
+            ])
+
+        self.assertEqual(2, exit_code)
+        self.assertIn("evidence", stderr.getvalue())
+
     def test_validation_check_not_ready_provider_returns_one(self):
         stderr = io.StringIO()
 
