@@ -2,8 +2,6 @@
 
  ModelGate is a fast, reliable AI gateway that routes requests to 100s of LLMs with sub-millisecond latency. It provides guardrail/plugin hooks, provider transforms, routing, caching, streaming, telemetry, and OpenAI-compatible `/v1/*` proxy services to all of your environments. It is built with Maven, Javalin 7, embedded Jetty 12, Java virtual threads, Java `HttpClient`, guardrail/plugin hooks, provider transforms, routing, caching, streaming, telemetry, and OpenAI-compatible `/v1/*` proxy surfaces.
 
-- Packaging: executable shaded jar and Dockerfile.
-
 ## Features
 
 - Java 21 Maven app using Javalin 7 and virtual threads.
