@@ -142,14 +142,64 @@ Common config fields:
 | `targets` | Multi-provider routing targets. |
 | `strategy` | Routing mode and conditional/fallback behavior. |
 
-Sample configs are in [examples/configs](examples/configs):
+## Start With An Example Config
 
-- [openai-simple.json](examples/configs/openai-simple.json)
-- [fallback-loadbalance.json](examples/configs/fallback-loadbalance.json)
-- [guardrails-evals.json](examples/configs/guardrails-evals.json)
-- [redis-cache.json](examples/configs/redis-cache.json)
-- [sagemaker-sigv4.json](examples/configs/sagemaker-sigv4.json)
-- [otel.env.example](examples/configs/otel.env.example)
+The JSON examples are **request configs**, not server startup configs. Start ModelGate normally in one terminal, then send an example config in `x-modelgate-config`. The Python helper reads `@path` arguments and avoids having to escape JSON in a shell.
+
+Terminal 1 — start ModelGate:
+
+```powershell
+mvn -q -DskipTests exec:java -Dexec.args="--port 8787"
+```
+
+Terminal 2 — send the simplest OpenAI example:
+
+```powershell
+$env:OPENAI_API_KEY = "sk-..."
+python scripts/modelgate_request.py `
+  --base-url http://localhost:8787 `
+  --config "@examples/configs/openai-simple.json" `
+  --key-env OPENAI_API_KEY `
+  --model gpt-4o-mini `
+  --message "Say hello"
+```
+
+`--key-env` replaces the `${OPENAI_API_KEY}` placeholder in this single-provider config. To inspect the generated URL, headers, and body without contacting the provider, add `--dry-run`.
+
+### What Each Example Does
+
+| Example | What it demonstrates | Before using it |
+| --- | --- | --- |
+| [openai-simple.json](examples/configs/openai-simple.json) | One OpenAI target with a 60-second timeout, two retries for throttling/server errors, and `Retry-After` support. | Set `OPENAI_API_KEY`; use the command above. |
+| [fallback-loadbalance.json](examples/configs/fallback-loadbalance.json) | Tries OpenAI first and falls back to Anthropic for configured failure statuses; successful responses use the in-memory cache for five minutes. The target weights are present for easy conversion to `loadbalance`, but the configured mode is `fallback`. | Replace both `${OPENAI_API_KEY}` and `${ANTHROPIC_API_KEY}` in a local copy. |
+| [guardrails-evals.json](examples/configs/guardrails-evals.json) | Blocks secret-like input, requires `tenant` metadata, checks output for an `answer` JSON key, rejects null output, and attaches eval metadata. | Set `OPENAI_API_KEY`; request a JSON response containing an `answer` field. |
+| [redis-cache.json](examples/configs/redis-cache.json) | Uses a Redis-backed five-minute response cache and retries provider throttling/server errors once. | Start Redis, set `MODELGATE_REDIS_URL` before starting ModelGate, and set `OPENAI_API_KEY`. |
+| [sagemaker-sigv4.json](examples/configs/sagemaker-sigv4.json) | Signs SageMaker requests with AWS SigV4 in `us-east-1` and targets model variant `model-a`. | Replace the three AWS credential placeholders and adjust the region/model for your endpoint. |
+| [otel.env.example](examples/configs/otel.env.example) | Configures the ModelGate process itself: port, concurrency limits, Redis, trusted hosts, and OTLP traces, metrics, and logs. | Update the Redis/collector hosts and telemetry authorization value; this is an environment file, not a request config. |
+
+For the other OpenAI examples, reuse the first command with a different file:
+
+```powershell
+# Guardrails and eval metadata
+python scripts/modelgate_request.py --config "@examples/configs/guardrails-evals.json" --key-env OPENAI_API_KEY --model gpt-4o-mini --message "Return a JSON object with an answer field."
+
+# Redis-backed caching (MODELGATE_REDIS_URL must be set when the server starts)
+python scripts/modelgate_request.py --config "@examples/configs/redis-cache.json" --key-env OPENAI_API_KEY --model gpt-4o-mini --message "Say hello"
+```
+
+Environment variables set after ModelGate starts do not change its process settings. For Redis, telemetry, concurrency, or trusted-host settings, stop the server, set the variables, and start it again.
+
+### Configs With Multiple Credentials
+
+The helper does not expand every `${...}` placeholder automatically. For fallback and SageMaker, make a private local copy, replace its placeholders, and keep that credential-bearing file out of Git:
+
+```powershell
+Copy-Item examples/configs/fallback-loadbalance.json fallback.local.json
+# Edit fallback.local.json and replace both API-key placeholders.
+python scripts/modelgate_request.py --config "@fallback.local.json" --model gpt-4o-mini --message "Say hello"
+```
+
+See the [sample config guide](docs/sample-configs.md) for field-level notes and the [environment reference](docs/environment.md) for all process settings.
 
 ## Smoke Testing Providers
 
